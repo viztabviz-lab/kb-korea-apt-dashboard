@@ -1,198 +1,300 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>서울 아파트 시세 대시보드 · KB부동산</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>서울 아파트 시세 비교 · KB vs 한국부동산원</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root{
-    --bg:#0f1115; --card:#181b22; --line:#262a33; --txt:#e7e9ee; --sub:#9aa3b2;
-    --buy:#ffb020; --jeon:#4aa3ff; --up:#ff5c5c; --down:#3ddc97; --accent:#ffb020;
+    --bg:#0f1729; --panel:#16213a; --card:#1c2a47; --card-h:#243657;
+    --line:#2a3c5e; --txt:#e8eefb; --sub:#93a4c7;
+    --kb:#f5a623; --kbf:#f5a62322; --reb:#3b82f6; --rebf:#3b82f622;
+    --up:#ff6b6b; --down:#22c55e;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--txt);
-    font-family:'Pretendard','Malgun Gothic',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:1200px;margin:0 auto;padding:28px 20px 60px}
-  header{display:flex;flex-wrap:wrap;align-items:baseline;gap:12px;margin-bottom:6px}
-  h1{font-size:24px;margin:0;font-weight:800;letter-spacing:-.5px}
-  h1 b{color:var(--accent)}
-  .meta{color:var(--sub);font-size:13px;margin:2px 0 22px}
-  .badge{display:inline-block;background:var(--card);border:1px solid var(--line);
-    border-radius:20px;padding:3px 11px;font-size:12px;color:var(--sub);margin-left:6px}
-  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:24px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
-  .card .label{color:var(--sub);font-size:13px;margin-bottom:6px}
-  .card .val{font-size:26px;font-weight:800;letter-spacing:-.5px}
-  .card .chg{font-size:12.5px;margin-top:4px}
+  body{margin:0;font-family:'Pretendard','Malgun Gothic',system-ui,sans-serif;
+    background:linear-gradient(160deg,#0b1322,#0f1729 60%);color:var(--txt);min-height:100vh}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 22px 60px}
+  header{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap}
+  header .brand{display:flex;align-items:center;gap:16px}
+  header .brand .logo{width:54px;height:54px;flex:none;filter:drop-shadow(0 4px 12px rgba(71,60,156,.45))}
+  header h1{font-size:25px;line-height:1.25;margin:0 0 6px;letter-spacing:-.5px}
+  header h1 .kb{color:var(--kb)} header h1 .reb{color:var(--reb)}
+  header p{margin:0;color:var(--sub);font-size:14px;line-height:1.4}
+  .credit{text-align:right;font-size:13px;color:var(--sub);white-space:nowrap}
+  .credit .who{color:var(--txt);font-weight:700}
+  .credit a{color:#60a5fa;text-decoration:none}
+  .credit a:hover{text-decoration:underline}
+  .badges{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 4px}
+  .badge{display:inline-flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--line);
+    border-radius:20px;padding:5px 13px;font-size:12.5px;color:var(--sub)}
+  .dot{width:9px;height:9px;border-radius:50%}
+  .dot.kb{background:var(--kb)} .dot.reb{background:var(--reb)}
+
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:13px;margin:16px 0 22px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 17px}
+  .card .label{color:var(--sub);font-size:13px;margin-bottom:11px;display:flex;justify-content:space-between}
+  .card .label .gap{color:#cdd7ea;font-weight:600}
+  .srcrow{display:flex;align-items:baseline;justify-content:space-between;margin:5px 0}
+  .srcrow .src{font-size:12px;color:var(--sub);display:flex;align-items:center;gap:6px}
+  .srcrow .v{font-size:21px;font-weight:800;letter-spacing:-.5px}
+  .srcrow .chg{font-size:11.5px;margin-left:7px;font-weight:600}
   .chg.up{color:var(--up)} .chg.down{color:var(--down)} .chg.flat{color:var(--sub)}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-  @media(max-width:820px){.grid{grid-template-columns:1fr}}
-  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px 8px}
-  .panel h3{margin:0 0 4px;font-size:15px;font-weight:700}
-  .panel .desc{color:var(--sub);font-size:12px;margin:0 0 10px}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:860px){.grid{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px 10px}
   .panel.full{grid-column:1/-1}
+  .panel h3{margin:0 0 3px;font-size:15px;font-weight:700}
+  .panel .desc{color:var(--sub);font-size:12px;margin:0 0 10px}
   .chartbox{position:relative;height:300px}
-  .row{display:flex;align-items:center;gap:8px;margin:0 0 10px}
-  select{background:#11141a;color:var(--txt);border:1px solid var(--line);border-radius:8px;
+  .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 8px}
+  select{background:#0d1626;color:var(--txt);border:1px solid var(--line);border-radius:8px;
     padding:6px 10px;font-size:13px}
-  footer{color:var(--sub);font-size:12px;margin-top:30px;text-align:center;line-height:1.7}
-  a{color:var(--accent);text-decoration:none}
+  footer{margin-top:30px;color:var(--sub);font-size:12px;line-height:1.8}
+  footer a{color:#60a5fa;text-decoration:none}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>서울 <b>아파트 시세</b> 대시보드</h1>
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 582 582" xmlns="http://www.w3.org/2000/svg" aria-label="빅스데이터 로고">
+        <path d="M 70 0 H 512 A 70 70 0 0 1 582 70 V 362 A 220 220 0 0 1 362 582 H 70 A 70 70 0 0 1 0 512 V 70 A 70 70 0 0 1 70 0 Z" fill="#473C9C"/>
+        <text x="293" y="318" font-family="Arial Black, Arial, sans-serif" font-size="430" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="central">B</text>
+      </svg>
+      <div>
+        <h1>서울 아파트 시세 비교 · <span class="kb">KB부동산</span> vs <span class="reb">한국부동산원</span></h1>
+        <p>두 기관의 매매·전세 가격지수와 평균가격을 한 화면에서 비교합니다.</p>
+      </div>
+    </div>
+    <div class="credit">
+      <div class="who">빅스데이터 강승일</div>
+      <div><a href="mailto:sikang@bigxdata.io">sikang@bigxdata.io</a></div>
+    </div>
+  </header>
+
+  <div class="badges">
+    <span class="badge"><span class="dot kb"></span> KB부동산 데이터허브</span>
+    <span class="badge"><span class="dot reb"></span> 한국부동산원 R-ONE</span>
     <span class="badge" id="asof-week"></span>
     <span class="badge" id="asof-month"></span>
-  </header>
-  <div class="meta">출처: KB부동산 데이터허브 · 갱신 <span id="updated"></span></div>
+    <span class="badge" id="updated"></span>
+  </div>
 
   <div class="cards" id="cards"></div>
 
   <div class="grid">
     <div class="panel">
-      <h3>서울 가격지수 추이</h3>
-      <p class="desc">주간 · 2022.1=100</p>
+      <div class="row">
+        <h3 style="margin:0">서울 가격지수 추이</h3>
+        <select id="idxMetric">
+          <option value="매매지수">매매</option>
+          <option value="전세지수">전세</option>
+        </select>
+      </div>
+      <p class="desc">주간 · 공통 시작일=100 기준 재지수화(기관별 기준시점이 달라 추세 비교용)</p>
       <div class="chartbox"><canvas id="idxChart"></canvas></div>
     </div>
+
     <div class="panel">
-      <h3>서울 평균가격 추이</h3>
-      <p class="desc">월간 · 단위 억원</p>
+      <div class="row">
+        <h3 style="margin:0">서울 평균가격 추이</h3>
+        <select id="avgMetric">
+          <option value="매매평균">매매</option>
+          <option value="전세평균">전세</option>
+        </select>
+      </div>
+      <p class="desc">월간 · 단위 억원 · 동일 단위 직접 비교(아파트)</p>
       <div class="chartbox"><canvas id="avgChart"></canvas></div>
     </div>
 
     <div class="panel full">
       <div class="row">
-        <h3 style="margin:0">자치구 비교</h3>
-        <select id="metricSel">
+        <h3 style="margin:0">자치구별 가격지수 비교</h3>
+        <select id="guMetric">
           <option value="매매지수">매매 가격지수</option>
           <option value="전세지수">전세 가격지수</option>
-          <option value="전세가율">전세가율(%)</option>
         </select>
+        <span class="desc" style="margin:0">25개 구 최신 주간지수 · KB 높은 순</span>
       </div>
-      <p class="desc">서울 25개 구 최신값 · 높은 순</p>
-      <div class="chartbox" style="height:360px"><canvas id="guChart"></canvas></div>
+      <div class="chartbox" style="height:430px"><canvas id="guChart"></canvas></div>
     </div>
 
     <div class="panel full">
       <div class="row">
-        <h3 style="margin:0">자치구별 매매 가격지수 추이</h3>
+        <h3 style="margin:0">자치구별 매매지수 추이</h3>
         <select id="guSel"></select>
+        <span class="desc" style="margin:0">선택 구 · 공통 시작일=100 재지수화</span>
       </div>
-      <p class="desc">선택 구 vs 서울 평균</p>
       <div class="chartbox"><canvas id="guTrendChart"></canvas></div>
     </div>
   </div>
 
   <footer>
     데이터: <a href="https://data.kbland.kr/" target="_blank">KB부동산 데이터허브</a> 주택가격동향조사 ·
+    <a href="https://www.reb.or.kr/r-one/" target="_blank">한국부동산원 R-ONE</a> 전국주택가격동향조사(아파트) ·
     자동 수집/배포 by GitHub Actions<br>
-    원자료 다운로드: <a href="data/kb_seoul_시계열.csv">CSV</a> ·
-    <a href="data/kb_seoul.json">JSON</a>
+    원자료: KB <a href="data/kb_seoul_시계열.csv">CSV</a> · <a href="data/kb_seoul.json">JSON</a> &nbsp;|&nbsp;
+    부동산원 <a href="data/reb_seoul_시계열.csv">CSV</a> · <a href="data/reb_seoul.json">JSON</a><br>
+    ※ 두 기관은 표본·산정방식이 달라 절대수준에 차이가 있습니다. 부동산원은 전세가율을 API로 공표하지 않습니다.
   </footer>
 </div>
 
 <script>
-const fmt = n => n==null ? '–' : n.toLocaleString('ko-KR');
-const GRID = '#262a33', SUB = '#9aa3b2';
+const GRID='#2a3c5e', SUB='#93a4c7', KB='#f5a623', REB='#3b82f6';
 Chart.defaults.color = SUB;
 Chart.defaults.font.family = "'Pretendard','Malgun Gothic',sans-serif";
 
-function changeHtml(cur, prev, suffix='', pct=false){
-  if(cur==null||prev==null) return '';
-  const diff = cur - prev;
-  const cls = diff>0?'up':diff<0?'down':'flat';
-  const arrow = diff>0?'▲':diff<0?'▼':'–';
-  const v = pct ? (diff>=0?'+':'')+diff.toFixed(2)+'%p'
-                : (diff>=0?'+':'')+diff.toFixed(2)+suffix;
-  return `<div class="chg ${cls}">${arrow} ${v} <span style="color:var(--sub)">전기대비</span></div>`;
+const lastVal = arr => { const v=(arr||[]).filter(x=>x!=null); return [v.at(-1), v.at(-2)]; };
+const eok = v => v==null ? null : +(v/10000).toFixed(2);   // 만원 -> 억
+
+/* 두 소스의 날짜축을 합집합으로 정렬 */
+function unionDates(a, b){
+  return [...new Set([...(a||[]), ...(b||[])])].sort();
+}
+/* series(dates,vals) 를 라벨축(labels)에 정렬 → 없는 날짜는 null */
+function align(labels, dates, vals){
+  const m = new Map(); (dates||[]).forEach((d,i)=>m.set(d, vals[i]));
+  return labels.map(d => m.has(d) ? m.get(d) : null);
+}
+/* 공통 시작일을 100으로 재지수화 */
+function rebase(labels, alignedKB, alignedREB){
+  let base=null;
+  for(let i=0;i<labels.length;i++){
+    if(alignedKB[i]!=null && alignedREB[i]!=null){ base=i; break; }
+  }
+  const norm = (arr)=>{
+    if(base==null) return arr;
+    const b = arr[base];
+    return arr.map(v => (v==null||b==null) ? null : +(v/b*100).toFixed(2));
+  };
+  return [norm(alignedKB), norm(alignedREB)];
 }
 
-fetch('data/kb_seoul.json?_='+Date.now()).then(r=>r.json()).then(d=>{
-  document.getElementById('updated').textContent = d.updated;
-  document.getElementById('asof-week').textContent  = '주간 ' + d.asof.weekly;
-  document.getElementById('asof-month').textContent = '월간 ' + (d.asof.monthly||'').slice(0,7);
-
-  const S = d.series;
-  const seoul = d.summary.find(s=>s.region==='서울');
-  const lastTwo = arr => { const v=arr.filter(x=>x!=null); return [v.at(-1), v.at(-2)]; };
-  const [mai, maiP] = lastTwo(S.매매평균.서울);
-  const [jei, jeiP] = lastTwo(S.전세평균.서울);
-  const [mxi, mxiP] = lastTwo(S.매매지수.서울);
-  const [rti, rtiP] = lastTwo(S.전세가율.서울);
-
-  // KPI 카드
-  document.getElementById('cards').innerHTML = [
-    {l:'매매 평균가', v:(mai/10000).toFixed(2)+'억', c:changeHtml(mai/10000, maiP/10000,'억')},
-    {l:'전세 평균가', v:(jei/10000).toFixed(2)+'억', c:changeHtml(jei/10000, jeiP/10000,'억')},
-    {l:'매매 가격지수', v:mxi.toFixed(2), c:changeHtml(mxi, mxiP)},
-    {l:'전세가율', v:rti.toFixed(1)+'%', c:changeHtml(rti, rtiP,'',true)},
-  ].map(c=>`<div class="card"><div class="label">${c.l}</div>
-      <div class="val">${c.v}</div>${c.c}</div>`).join('');
-
-  // 가격지수 추이
-  new Chart(idxChart,{type:'line',data:{labels:S.매매지수.dates,
-    datasets:[
-      {label:'매매',data:S.매매지수.서울,borderColor:'#ffb020',backgroundColor:'#ffb02022',
-        fill:true,tension:.25,pointRadius:0,borderWidth:2},
-      {label:'전세',data:S.전세지수.서울,borderColor:'#4aa3ff',backgroundColor:'#4aa3ff15',
-        fill:true,tension:.25,pointRadius:0,borderWidth:2},
-    ]},options:lineOpts()});
-
-  // 평균가격 추이 (억)
-  const toEok = a => a.map(v=>v==null?null:+(v/10000).toFixed(2));
-  new Chart(avgChart,{type:'line',data:{labels:S.매매평균.dates,
-    datasets:[
-      {label:'매매',data:toEok(S.매매평균.서울),borderColor:'#ffb020',
-        backgroundColor:'#ffb02022',fill:true,tension:.25,pointRadius:0,borderWidth:2},
-      {label:'전세',data:toEok(S.전세평균.서울),borderColor:'#4aa3ff',
-        backgroundColor:'#4aa3ff15',fill:true,tension:.25,pointRadius:0,borderWidth:2},
-    ]},options:lineOpts(v=>v+'억')});
-
-  // 자치구 비교 (bar)
-  const gus = d.summary.filter(s=>s.region!=='서울');
-  let guChartObj;
-  function drawGu(metric){
-    const key = metric==='매매지수'?'매매지수':metric==='전세지수'?'전세지수':'전세가율';
-    const rows = gus.map(s=>({r:s.region,v:s[key]})).filter(x=>x.v!=null)
-                    .sort((a,b)=>b.v-a.v);
-    const color = metric==='전세가율'?'#3ddc97':metric==='전세지수'?'#4aa3ff':'#ffb020';
-    if(guChartObj) guChartObj.destroy();
-    guChartObj = new Chart(guChart,{type:'bar',data:{labels:rows.map(x=>x.r),
-      datasets:[{data:rows.map(x=>x.v),backgroundColor:color,borderRadius:4}]},
-      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:false}},
-        scales:{x:{grid:{color:GRID}},y:{grid:{display:false},ticks:{font:{size:11}}}}}});
-  }
-  drawGu('매매지수');
-  metricSel.onchange = e=>drawGu(e.target.value);
-
-  // 자치구별 추이
-  const guNames = Object.keys(S.매매지수).filter(k=>k!=='dates'&&k!=='서울');
-  guSel.innerHTML = guNames.map(g=>`<option ${g==='강남구'?'selected':''}>${g}</option>`).join('');
-  let guTrendObj;
-  function drawTrend(gu){
-    if(guTrendObj) guTrendObj.destroy();
-    guTrendObj = new Chart(guTrendChart,{type:'line',data:{labels:S.매매지수.dates,
-      datasets:[
-        {label:gu,data:S.매매지수[gu],borderColor:'#ffb020',tension:.25,pointRadius:0,borderWidth:2},
-        {label:'서울',data:S.매매지수.서울,borderColor:'#5b6373',borderDash:[5,4],
-          tension:.25,pointRadius:0,borderWidth:1.5},
-      ]},options:lineOpts()});
-  }
-  drawTrend('강남구');
-  guSel.onchange = e=>drawTrend(e.target.value);
-});
+function changeHtml(cur, prev, suffix=''){
+  if(cur==null||prev==null) return '';
+  const diff=cur-prev, cls=diff>0?'up':diff<0?'down':'flat', arrow=diff>0?'▲':diff<0?'▼':'–';
+  return `<span class="chg ${cls}">${arrow}${(diff>=0?'+':'')+diff.toFixed(2)+suffix}</span>`;
+}
 
 function lineOpts(yfmt){
   return {responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
-    plugins:{legend:{position:'top',labels:{boxWidth:12,padding:14}},
-      tooltip:{callbacks: yfmt?{label:c=>c.dataset.label+': '+yfmt(c.parsed.y)}:{}}},
+    spanGaps:true,
+    plugins:{legend:{position:'top',labels:{boxWidth:12,padding:14,usePointStyle:true}},
+      tooltip:{callbacks: yfmt?{label:c=>c.dataset.label+': '+(c.parsed.y==null?'–':yfmt(c.parsed.y))}:{}}},
     scales:{x:{grid:{display:false},ticks:{maxTicksLimit:8,font:{size:11}}},
       y:{grid:{color:GRID},ticks:{callback:yfmt?(v=>yfmt(v)):(v=>v)}}}};
 }
+const ds = (label,data,color,fill)=>({label,data,borderColor:color,
+  backgroundColor:fill?color+'22':'transparent',fill:!!fill,tension:.25,pointRadius:0,
+  borderWidth:2,pointStyle:'circle'});
+
+Promise.all([
+  fetch('data/kb_seoul.json?_='+Date.now()).then(r=>r.json()),
+  fetch('data/reb_seoul.json?_='+Date.now()).then(r=>r.json()),
+]).then(([kb, reb])=>{
+  // 배지
+  document.getElementById('asof-week').textContent  = '주간 기준 KB ' + kb.asof.weekly + ' · 부동산원 ' + reb.asof.weekly;
+  document.getElementById('asof-month').textContent = '월간 기준 ' + (kb.asof.monthly||'').slice(0,7);
+  document.getElementById('updated').textContent    = '갱신 ' + kb.updated;
+
+  const seoulKB  = kb.summary.find(s=>s.region==='서울');
+  const seoulREB = reb.summary.find(s=>s.region==='서울');
+
+  /* ---------- KPI 카드 (KB vs 부동산원) ---------- */
+  function avgCard(label, kbEok, rebEok){
+    const gap = (kbEok!=null&&rebEok!=null) ? '격차 '+(kbEok-rebEok>=0?'+':'')+(kbEok-rebEok).toFixed(2)+'억' : '';
+    return cardHtml(label, gap,
+      [{src:'KB', color:KB, v:kbEok!=null?kbEok.toFixed(2)+'억':'–'},
+       {src:'부동산원', color:REB, v:rebEok!=null?rebEok.toFixed(2)+'억':'–'}]);
+  }
+  function idxCard(label, kS, rS){
+    const [kc,kp]=lastVal(kS), [rc,rp]=lastVal(rS);
+    const gap = (kc!=null&&rc!=null)?'격차 '+(kc-rc>=0?'+':'')+(kc-rc).toFixed(1):'';
+    return cardHtml(label, gap,
+      [{src:'KB', color:KB, v:kc!=null?kc.toFixed(2):'–', chg:changeHtml(kc,kp)},
+       {src:'부동산원', color:REB, v:rc!=null?rc.toFixed(2):'–', chg:changeHtml(rc,rp)}]);
+  }
+  function cardHtml(label, gap, rows){
+    return `<div class="card"><div class="label"><span>${label}</span><span class="gap">${gap}</span></div>`+
+      rows.map(r=>`<div class="srcrow"><span class="src"><span class="dot" style="background:${r.color}"></span>${r.src}</span>
+        <span><span class="v">${r.v}</span>${r.chg||''}</span></div>`).join('')+`</div>`;
+  }
+  document.getElementById('cards').innerHTML = [
+    avgCard('매매 평균가 (서울)', seoulKB?.매매평균억, seoulREB?.매매평균억),
+    avgCard('전세 평균가 (서울)', seoulKB?.전세평균억, seoulREB?.전세평균억),
+    idxCard('매매 가격지수 (서울·전주대비)', kb.series.매매지수.서울, reb.series.매매지수.서울),
+    idxCard('전세 가격지수 (서울·전주대비)', kb.series.전세지수.서울, reb.series.전세지수.서울),
+  ].join('');
+
+  /* ---------- 1) 서울 가격지수 추이 (재지수화) ---------- */
+  let idxChartObj;
+  function drawIdx(metric){
+    const kS=kb.series[metric], rS=reb.series[metric];
+    const labels=unionDates(kS.dates, rS.dates);
+    const aKB=align(labels, kS.dates, kS.서울), aREB=align(labels, rS.dates, rS.서울);
+    const [nKB,nREB]=rebase(labels, aKB, aREB);
+    if(idxChartObj) idxChartObj.destroy();
+    idxChartObj=new Chart(idxChart,{type:'line',data:{labels,
+      datasets:[ds('KB',nKB,KB,true), ds('부동산원',nREB,REB,false)]},options:lineOpts()});
+  }
+  drawIdx('매매지수');
+  idxMetric.onchange=e=>drawIdx(e.target.value);
+
+  /* ---------- 2) 서울 평균가격 추이 (억, 직접 비교) ---------- */
+  let avgChartObj;
+  function drawAvg(metric){
+    const kS=kb.series[metric], rS=reb.series[metric];
+    const labels=unionDates(kS.dates, rS.dates);
+    const aKB=align(labels, kS.dates, kS.서울).map(eok);
+    const aREB=align(labels, rS.dates, rS.서울).map(eok);
+    if(avgChartObj) avgChartObj.destroy();
+    avgChartObj=new Chart(avgChart,{type:'line',data:{labels,
+      datasets:[ds('KB',aKB,KB,true), ds('부동산원',aREB,REB,false)]},
+      options:lineOpts(v=>v.toFixed(2)+'억')});
+  }
+  drawAvg('매매평균');
+  avgMetric.onchange=e=>drawAvg(e.target.value);
+
+  /* ---------- 3) 자치구별 지수 비교 (그룹 막대) ---------- */
+  let guChartObj;
+  function drawGu(metric){
+    const kS=kb.series[metric], rS=reb.series[metric];
+    const last = S => { const v=(S||[]).filter(x=>x!=null); return v.at(-1); };
+    const gus = kb.summary.filter(s=>s.region!=='서울').map(s=>s.region);
+    const rows = gus.map(g=>({g, kb:last(kS[g]), reb:last(rS[g])}))
+                    .filter(x=>x.kb!=null||x.reb!=null)
+                    .sort((a,b)=>(b.kb??-1)-(a.kb??-1));
+    if(guChartObj) guChartObj.destroy();
+    guChartObj=new Chart(guChart,{type:'bar',data:{labels:rows.map(x=>x.g),
+      datasets:[
+        {label:'KB',data:rows.map(x=>x.kb),backgroundColor:KB,borderRadius:3},
+        {label:'부동산원',data:rows.map(x=>x.reb),backgroundColor:REB,borderRadius:3},
+      ]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'top',labels:{boxWidth:12,usePointStyle:true}}},
+        scales:{x:{grid:{color:GRID},suggestedMin:80},y:{grid:{display:false},ticks:{font:{size:11}}}}}});
+  }
+  drawGu('매매지수');
+  guMetric.onchange=e=>drawGu(e.target.value);
+
+  /* ---------- 4) 자치구별 매매지수 추이 (재지수화) ---------- */
+  const guNames=Object.keys(kb.series.매매지수).filter(k=>k!=='dates'&&k!=='서울');
+  guSel.innerHTML=guNames.map(g=>`<option ${g==='강남구'?'selected':''}>${g}</option>`).join('');
+  let guTrendObj;
+  function drawTrend(gu){
+    const kS=kb.series.매매지수, rS=reb.series.매매지수;
+    const labels=unionDates(kS.dates, rS.dates);
+    const [nKB,nREB]=rebase(labels, align(labels,kS.dates,kS[gu]), align(labels,rS.dates,rS[gu]));
+    if(guTrendObj) guTrendObj.destroy();
+    guTrendObj=new Chart(guTrendChart,{type:'line',data:{labels,
+      datasets:[ds('KB '+gu,nKB,KB,false), ds('부동산원 '+gu,nREB,REB,false)]},options:lineOpts()});
+  }
+  drawTrend('강남구');
+  guSel.onchange=e=>drawTrend(e.target.value);
+});
 </script>
 </body>
 </html>
