@@ -17,17 +17,29 @@ import os
 import sys
 import json
 import math
+import time
 import datetime as dt
 from pathlib import Path
 
 import requests
 import urllib3
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 sys.stdout.reconfigure(encoding="utf-8")
 
 BASE = "https://www.reb.or.kr/r-one/openapi/SttsApiTblData.do"
 HEADERS = {"User-Agent": "Mozilla/5.0"}
+
+# R-ONE 서버는 연속 호출 시 간헐적으로 연결을 끊는다(RemoteDisconnected).
+# 세션 재사용 + 백오프 재시도로 견고하게 처리한다.
+SESSION = requests.Session()
+SESSION.headers.update(HEADERS)
+_retry = Retry(total=5, connect=5, read=5, backoff_factor=1.5,
+               status_forcelist=(500, 502, 503, 504),
+               allowed_methods=frozenset(["GET"]))
+SESSION.mount("https://", HTTPAdapter(max_retries=_retry))
 HERE = Path(__file__).resolve().parent
 OUT = HERE / "data"
 OUT.mkdir(exist_ok=True)
@@ -61,10 +73,20 @@ def call(statbl_id, cycle, *, cls_id=None, pindex=1, psize=PAGE):
               "Type": "json", "pIndex": pindex, "pSize": psize}
     if cls_id is not None:
         params["CLS_ID"] = cls_id
-    r = requests.get(BASE, params=params, headers=HEADERS, verify=False, timeout=60)
-    body = r.json()
+    last_err = None
+    for attempt in range(4):                       # 어댑터 재시도 외 추가 방어
+        try:
+            r = SESSION.get(BASE, params=params, verify=False, timeout=60)
+            body = r.json()
+            break
+        except (requests.exceptions.RequestException, ValueError) as e:
+            last_err = e
+            time.sleep(2 * (attempt + 1))
+    else:
+        raise RuntimeError(f"{statbl_id} 호출 실패(재시도 초과): {last_err}")
     if "SttsApiTblData" not in body:
         raise RuntimeError(f"{statbl_id} 응답 오류: {body.get('RESULT', body)}")
+    time.sleep(0.2)                                # 서버 부하 완화(연결 끊김 방지)
     total, rows = 0, []
     for blk in body["SttsApiTblData"]:
         if "head" in blk:
