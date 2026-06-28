@@ -28,9 +28,9 @@
   .dot{width:9px;height:9px;border-radius:50%}
   .dot.kb{background:var(--kb)} .dot.reb{background:var(--reb)}
 
-  .regionbar{display:flex;align-items:center;gap:10px;margin:18px 0 6px;flex-wrap:wrap}
-  .regionbar label{color:var(--sub);font-size:13px}
-  .regionbar select{font-size:15px;font-weight:700;padding:8px 12px}
+  .regionpick{display:inline-flex;align-items:center;gap:8px;margin-right:4px}
+  .regionpick label{color:var(--sub);font-size:13px}
+  .regionpick select{font-size:14px;font-weight:700;padding:5px 11px}
 
   .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:13px;margin:12px 0 22px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 17px}
@@ -68,16 +68,12 @@
   </header>
 
   <div class="badges">
+    <span class="regionpick"><label for="regionSel">지역</label><select id="regionSel" title="지역 선택"></select></span>
     <span class="badge"><span class="dot kb"></span> KB부동산 데이터허브</span>
     <span class="badge"><span class="dot reb"></span> 한국부동산원 R-ONE</span>
     <span class="badge" id="asof-week"></span>
     <span class="badge" id="asof-month"></span>
     <span class="badge" id="updated"></span>
-  </div>
-
-  <div class="regionbar">
-    <label for="regionSel">지역</label>
-    <select id="regionSel"></select>
   </div>
 
   <div class="cards" id="cards"></div>
