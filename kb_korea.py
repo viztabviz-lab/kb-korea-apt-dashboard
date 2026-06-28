@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-KB부동산 데이터허브 - 서울 아파트 시세(통계 시계열) 수집기
+KB부동산 데이터허브 - 전국(17개 시도) 아파트 시세(통계 시계열) 수집기
 - 인증키 불필요 (data-api.kbland.kr 공개 통계 API 사용)
-- 출력: data/kb_seoul_시계열.csv (Tableau용 long-format)
-         data/KB_서울아파트시세.xlsx (요약 + 지표별 시트)
-실행: python kb_seoul.py
+- 출력: data/kb_korea.json (대시보드용 compact JSON)
+         data/kb_korea_시계열.csv (Tableau용 long-format)
+         data/KB_전국아파트시세.xlsx (요약 + 지표별 시트)
+실행: python kb_korea.py
 """
 import csv
 import json
@@ -23,10 +24,15 @@ sys.stdout.reconfigure(encoding="utf-8")
 
 BASE = "https://data-api.kbland.kr/bfmstat/weekMnthlyHuseTrnd/"
 HEADERS = {"User-Agent": "Mozilla/5.0"}
-SEOUL = "1100000000"           # 서울 지역코드 (이 코드로 호출하면 25개 구가 내려옴)
 HERE = Path(__file__).resolve().parent
 OUT = HERE / "data"
 OUT.mkdir(exist_ok=True)
+
+# 전국 + 17개 시도. KB API는 최상위 호출(지역코드 미지정) 시 전국/광역집계/시도를
+# 한 번에 내려준다. 아래 집합에 든 지역만 골라 담는다(광역집계는 제외).
+SIDO_ORDER = ["전국", "서울", "경기", "인천", "부산", "대구", "광주", "대전", "울산",
+              "세종", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주"]
+SIDO_SET = set(SIDO_ORDER)
 
 
 def fetch(endpoint, **params):
@@ -70,53 +76,33 @@ def collect(endpoint, 지표, 거래구분, regions, **params):
     return recs
 
 
-SEOUL_GU = {
-    "종로구", "중구", "용산구", "성동구", "광진구", "동대문구", "중랑구", "성북구",
-    "강북구", "도봉구", "노원구", "은평구", "서대문구", "마포구", "양천구", "강서구",
-    "구로구", "금천구", "영등포구", "동작구", "관악구", "서초구", "강남구", "송파구", "강동구",
-}
-SEOUL_ALL = SEOUL_GU | {"서울"}
-
-
 def gather():
     all_recs = []
     print("· 매매 가격지수(주간) ...")
-    all_recs += collect("priceIndex", "가격지수", "매매", {"서울"},
+    all_recs += collect("priceIndex", "가격지수", "매매", SIDO_SET,
                         월간주간구분코드="02", 매물종별구분="01", 매매전세코드="01")
-    all_recs += collect("priceIndex", "가격지수", "매매", SEOUL_GU,
-                        월간주간구분코드="02", 매물종별구분="01", 매매전세코드="01", 지역코드=SEOUL)
     print("· 전세 가격지수(주간) ...")
-    all_recs += collect("priceIndex", "가격지수", "전세", {"서울"},
+    all_recs += collect("priceIndex", "가격지수", "전세", SIDO_SET,
                         월간주간구분코드="02", 매물종별구분="01", 매매전세코드="02")
-    all_recs += collect("priceIndex", "가격지수", "전세", SEOUL_GU,
-                        월간주간구분코드="02", 매물종별구분="01", 매매전세코드="02", 지역코드=SEOUL)
     print("· 매매 평균가격(월간, 만원) ...")
-    all_recs += collect("avgPrc", "평균가격", "매매", {"서울"},
+    all_recs += collect("avgPrc", "평균가격", "매매", SIDO_SET,
                         매물종별구분="01", 매매전세코드="01")
     print("· 전세 평균가격(월간, 만원) ...")
-    all_recs += collect("avgPrc", "평균가격", "전세", {"서울"},
+    all_recs += collect("avgPrc", "평균가격", "전세", SIDO_SET,
                         매물종별구분="01", 매매전세코드="02")
     print("· 전세가율(월간, %) ...")
-    all_recs += collect("dealCntstTnantRato", "전세가율", "-", {"서울"},
+    all_recs += collect("dealCntstTnantRato", "전세가율", "-", SIDO_SET,
                         매물종별구분="01")
-    all_recs += collect("dealCntstTnantRato", "전세가율", "-", SEOUL_GU,
-                        매물종별구분="01", 지역코드=SEOUL)
     return all_recs
 
 
 def write_csv(recs):
-    path = OUT / "kb_seoul_시계열.csv"
+    path = OUT / "kb_korea_시계열.csv"
     with open(path, "w", newline="", encoding="utf-8-sig") as f:
         w = csv.DictWriter(f, fieldnames=["날짜", "지역명", "지표", "거래구분", "값"])
         w.writeheader()
         w.writerows(sorted(recs, key=lambda r: (r["지표"], r["거래구분"], r["지역명"], r["날짜"])))
     return path
-
-
-GU_ORDER = ["서울", "종로구", "중구", "용산구", "성동구", "광진구", "동대문구", "중랑구",
-            "성북구", "강북구", "도봉구", "노원구", "은평구", "서대문구", "마포구", "양천구",
-            "강서구", "구로구", "금천구", "영등포구", "동작구", "관악구", "서초구", "강남구",
-            "송파구", "강동구"]
 
 
 def latest_snapshot(recs):
@@ -130,7 +116,7 @@ def latest_snapshot(recs):
 
 
 def write_excel(recs):
-    path = OUT / "KB_서울아파트시세.xlsx"
+    path = OUT / "KB_전국아파트시세.xlsx"
     wb = Workbook()
     hdr_fill = PatternFill("solid", fgColor="1f4e79")
     hdr_font = Font(color="FFFFFF", bold=True)
@@ -150,14 +136,14 @@ def write_excel(recs):
     cols = ["지역", "매매 평균가(억)", "전세 평균가(억)", "매매 가격지수",
             "전세 가격지수", "전세가율(%)"]
     ws.append(cols)
-    for gu in GU_ORDER:
+    for sido in SIDO_ORDER:
         def g(지표, 거래):
-            r = latest.get((지표, 거래, gu))
+            r = latest.get((지표, 거래, sido))
             return r["값"] if r else None
         mae_avg = g("평균가격", "매매")
         jeon_avg = g("평균가격", "전세")
         ws.append([
-            gu,
+            sido,
             round(mae_avg / 10000, 2) if mae_avg else "",   # 만원 -> 억
             round(jeon_avg / 10000, 2) if jeon_avg else "",
             g("가격지수", "매매") or "",
@@ -175,7 +161,7 @@ def write_excel(recs):
         if not sub:
             return
         dates = sorted({r["날짜"] for r in sub})
-        regions = [g for g in GU_ORDER if any(r["지역명"] == g for r in sub)]
+        regions = [g for g in SIDO_ORDER if any(r["지역명"] == g for r in sub)]
         idx = {(r["날짜"], r["지역명"]): r["값"] for r in sub}
         ws = wb.create_sheet(title[:31])
         ws.append(["날짜"] + regions)
@@ -197,7 +183,7 @@ def write_excel(recs):
 def build_series(recs, 지표, 거래):
     sub = [r for r in recs if r["지표"] == 지표 and r["거래구분"] == 거래]
     dates = sorted({r["날짜"] for r in sub})
-    regions = [g for g in GU_ORDER if any(r["지역명"] == g for r in sub)]
+    regions = [g for g in SIDO_ORDER if any(r["지역명"] == g for r in sub)]
     idx = {(r["날짜"], r["지역명"]): r["값"] for r in sub}
     out = {"dates": dates}
     for g in regions:
@@ -207,17 +193,17 @@ def build_series(recs, 지표, 거래):
 
 def write_json(recs):
     """대시보드용 compact JSON"""
-    path = OUT / "kb_seoul.json"
+    path = OUT / "kb_korea.json"
     latest = latest_snapshot(recs)
     summary = []
-    for gu in GU_ORDER:
+    for sido in SIDO_ORDER:
         def g(지표, 거래):
-            r = latest.get((지표, 거래, gu))
+            r = latest.get((지표, 거래, sido))
             return r["값"] if r else None
         ma = g("평균가격", "매매")
         je = g("평균가격", "전세")
         summary.append({
-            "region": gu,
+            "region": sido,
             "매매평균억": round(ma / 10000, 2) if ma else None,
             "전세평균억": round(je / 10000, 2) if je else None,
             "매매지수": g("가격지수", "매매"),
@@ -227,6 +213,7 @@ def write_json(recs):
     weekly_dates = sorted({r["날짜"] for r in recs if r["지표"] == "가격지수"})
     monthly_dates = sorted({r["날짜"] for r in recs if r["지표"] == "평균가격"})
     payload = {
+        "source": "KB부동산 데이터허브 주택가격동향조사(아파트)",
         "updated": dt.datetime.now().strftime("%Y-%m-%d %H:%M"),
         "asof": {
             "weekly": weekly_dates[-1] if weekly_dates else None,
@@ -247,7 +234,7 @@ def write_json(recs):
 
 
 def main():
-    print(f"[KB 서울 아파트 시세 수집] {dt.datetime.now():%Y-%m-%d %H:%M}")
+    print(f"[KB 전국 아파트 시세 수집] {dt.datetime.now():%Y-%m-%d %H:%M}")
     recs = gather()
     csv_path = write_csv(recs)
     json_path = write_json(recs)

@@ -26,11 +26,11 @@ jobs:
           python-version: '3.12'
       - run: pip install requests openpyxl
       - name: Collect KB data
-        run: python kb_seoul.py
+        run: python kb_korea.py
       - name: Collect 부동산원(R-ONE) data
         env:
           REB_API_KEY: ${{ secrets.REB_API_KEY }}
-        run: python reb_seoul.py
+        run: python reb_korea.py
       - name: Commit refreshed data
         run: |
           git config user.name  "github-actions[bot]"

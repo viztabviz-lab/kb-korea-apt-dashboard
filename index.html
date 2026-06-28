@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>서울 아파트 시세 비교 · KB vs 한국부동산원</title>
+<title>전국 아파트 시세 비교 · KB vs 한국부동산원</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root{
@@ -18,21 +18,21 @@
   .wrap{max-width:1180px;margin:0 auto;padding:28px 22px 60px}
   header{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap}
   header .brand{display:flex;align-items:center;gap:16px}
-  header .brand .logo{width:54px;height:54px;flex:none;filter:drop-shadow(0 4px 12px rgba(71,60,156,.45))}
   header h1{font-size:25px;line-height:1.25;margin:0 0 6px;letter-spacing:-.5px}
   header h1 .kb{color:var(--kb)} header h1 .reb{color:var(--reb)}
   header p{margin:0;color:var(--sub);font-size:14px;line-height:1.4}
-  .credit{text-align:right;font-size:13px;color:var(--sub);white-space:nowrap}
-  .credit .who{color:var(--txt);font-weight:700}
-  .credit a{color:#60a5fa;text-decoration:none}
-  .credit a:hover{text-decoration:underline}
-  .badges{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 4px}
+  .badges{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 4px;align-items:center}
   .badge{display:inline-flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--line);
     border-radius:20px;padding:5px 13px;font-size:12.5px;color:var(--sub)}
+  .badge.warn{border-color:#7a5a1f;color:#f5c16b}
   .dot{width:9px;height:9px;border-radius:50%}
   .dot.kb{background:var(--kb)} .dot.reb{background:var(--reb)}
 
-  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:13px;margin:16px 0 22px}
+  .regionbar{display:flex;align-items:center;gap:10px;margin:18px 0 6px;flex-wrap:wrap}
+  .regionbar label{color:var(--sub);font-size:13px}
+  .regionbar select{font-size:15px;font-weight:700;padding:8px 12px}
+
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:13px;margin:12px 0 22px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 17px}
   .card .label{color:var(--sub);font-size:13px;margin-bottom:11px;display:flex;justify-content:space-between}
   .card .label .gap{color:#cdd7ea;font-weight:600}
@@ -61,8 +61,8 @@
   <header>
     <div class="brand">
       <div>
-        <h1>서울 아파트 시세 비교 · <span class="kb">KB부동산</span> vs <span class="reb">한국부동산원</span></h1>
-        <p>두 기관의 매매·전세 가격지수와 평균가격을 한 화면에서 비교합니다.</p>
+        <h1>전국 아파트 시세 비교 · <span class="kb">KB부동산</span> vs <span class="reb">한국부동산원</span></h1>
+        <p>전국 17개 시도의 매매·전세 가격지수와 평균가격을 한 화면에서 비교합니다.</p>
       </div>
     </div>
   </header>
@@ -75,12 +75,17 @@
     <span class="badge" id="updated"></span>
   </div>
 
+  <div class="regionbar">
+    <label for="regionSel">지역</label>
+    <select id="regionSel"></select>
+  </div>
+
   <div class="cards" id="cards"></div>
 
   <div class="grid">
     <div class="panel">
       <div class="row">
-        <h3 style="margin:0">서울 가격지수 추이</h3>
+        <h3 style="margin:0"><span id="idxTitle">서울</span> 가격지수 추이</h3>
         <select id="idxMetric">
           <option value="매매지수">매매</option>
           <option value="전세지수">전세</option>
@@ -92,7 +97,7 @@
 
     <div class="panel">
       <div class="row">
-        <h3 style="margin:0">서울 평균가격 추이</h3>
+        <h3 style="margin:0"><span id="avgTitle">서울</span> 평균가격 추이</h3>
         <select id="avgMetric">
           <option value="매매평균">매매</option>
           <option value="전세평균">전세</option>
@@ -104,23 +109,26 @@
 
     <div class="panel full">
       <div class="row">
-        <h3 style="margin:0">자치구별 가격지수 비교</h3>
-        <select id="guMetric">
+        <h3 style="margin:0">시도별 가격지수 비교</h3>
+        <select id="sidoIdxMetric">
           <option value="매매지수">매매 가격지수</option>
           <option value="전세지수">전세 가격지수</option>
         </select>
-        <span class="desc" style="margin:0">25개 구 최신 주간지수 · KB 높은 순</span>
+        <span class="desc" style="margin:0">17개 시도 최신 주간지수 · KB 높은 순</span>
       </div>
-      <div class="chartbox" style="height:430px"><canvas id="guChart"></canvas></div>
+      <div class="chartbox" style="height:430px"><canvas id="sidoIdxChart"></canvas></div>
     </div>
 
     <div class="panel full">
       <div class="row">
-        <h3 style="margin:0">자치구별 매매지수 추이</h3>
-        <select id="guSel"></select>
-        <span class="desc" style="margin:0">선택 구 · 공통 시작일=100 재지수화</span>
+        <h3 style="margin:0">시도별 평균가격 비교</h3>
+        <select id="sidoAvgMetric">
+          <option value="매매평균">매매 평균가격</option>
+          <option value="전세평균">전세 평균가격</option>
+        </select>
+        <span class="desc" style="margin:0">17개 시도 최신 월간 평균가격(억) · KB 높은 순</span>
       </div>
-      <div class="chartbox"><canvas id="guTrendChart"></canvas></div>
+      <div class="chartbox" style="height:430px"><canvas id="sidoAvgChart"></canvas></div>
     </div>
   </div>
 
@@ -128,8 +136,8 @@
     데이터: <a href="https://data.kbland.kr/" target="_blank">KB부동산 데이터허브</a> 주택가격동향조사 ·
     <a href="https://www.reb.or.kr/r-one/" target="_blank">한국부동산원 R-ONE</a> 전국주택가격동향조사(아파트) ·
     자동 수집/배포 by GitHub Actions<br>
-    원자료: KB <a href="data/kb_seoul_시계열.csv">CSV</a> · <a href="data/kb_seoul.json">JSON</a> &nbsp;|&nbsp;
-    부동산원 <a href="data/reb_seoul_시계열.csv">CSV</a> · <a href="data/reb_seoul.json">JSON</a><br>
+    원자료: KB <a href="data/kb_korea_시계열.csv">CSV</a> · <a href="data/kb_korea.json">JSON</a> &nbsp;|&nbsp;
+    부동산원 <a href="data/reb_korea_시계열.csv">CSV</a> · <a href="data/reb_korea.json">JSON</a><br>
     ※ 두 기관은 표본·산정방식이 달라 절대수준에 차이가 있습니다. 부동산원은 전세가율을 API로 공표하지 않습니다.
   </footer>
 </div>
@@ -140,7 +148,6 @@ Chart.defaults.color = SUB;
 Chart.defaults.font.family = "'Pretendard','Malgun Gothic',sans-serif";
 
 const lastVal = arr => { const v=(arr||[]).filter(x=>x!=null); return [v.at(-1), v.at(-2)]; };
-const eok = v => v==null ? null : +(v/10000).toFixed(2);   // 만원 -> 억
 
 /* 두 소스의 날짜축을 합집합으로 정렬 */
 function unionDates(a, b){
@@ -148,7 +155,7 @@ function unionDates(a, b){
 }
 /* series(dates,vals) 를 라벨축(labels)에 정렬 → 없는 날짜는 null */
 function align(labels, dates, vals){
-  const m = new Map(); (dates||[]).forEach((d,i)=>m.set(d, vals[i]));
+  const m = new Map(); (dates||[]).forEach((d,i)=>m.set(d, vals?vals[i]:null));
   return labels.map(d => m.has(d) ? m.get(d) : null);
 }
 /* 공통 시작일을 100으로 재지수화 */
@@ -157,8 +164,12 @@ function rebase(labels, alignedKB, alignedREB){
   for(let i=0;i<labels.length;i++){
     if(alignedKB[i]!=null && alignedREB[i]!=null){ base=i; break; }
   }
+  if(base==null){           // 겹치는 구간이 없으면 각자 첫 유효값=100
+    const first = arr => { const i=arr.findIndex(v=>v!=null); return i<0?null:i; };
+    const norm1 = arr => { const b=first(arr); return b==null?arr:arr.map(v=>v==null?null:+(v/arr[b]*100).toFixed(2)); };
+    return [norm1(alignedKB), norm1(alignedREB)];
+  }
   const norm = (arr)=>{
-    if(base==null) return arr;
     const b = arr[base];
     return arr.map(v => (v==null||b==null) ? null : +(v/b*100).toFixed(2));
   };
@@ -183,19 +194,41 @@ const ds = (label,data,color,fill)=>({label,data,borderColor:color,
   backgroundColor:fill?color+'22':'transparent',fill:!!fill,tension:.25,pointRadius:0,
   borderWidth:2,pointStyle:'circle'});
 
+/* 부동산원 JSON 이 아직 없거나 실패해도 KB만으로 렌더 */
+const emptyReb = {asof:{}, updated:null, summary:[], series:{매매지수:{dates:[]},전세지수:{dates:[]},매매평균:{dates:[]},전세평균:{dates:[]}}};
+
 Promise.all([
-  fetch('data/kb_seoul.json?_='+Date.now()).then(r=>r.json()),
-  fetch('data/reb_seoul.json?_='+Date.now()).then(r=>r.json()),
+  fetch('data/kb_korea.json?_='+Date.now()).then(r=>r.json()),
+  fetch('data/reb_korea.json?_='+Date.now()).then(r=>r.ok?r.json():emptyReb).catch(()=>emptyReb),
 ]).then(([kb, reb])=>{
-  // 배지
-  document.getElementById('asof-week').textContent  = '주간 기준 KB ' + kb.asof.weekly + ' · 부동산원 ' + reb.asof.weekly;
+  const rebOK = (reb.summary && reb.summary.length>0);
+
+  /* 배지 */
+  document.getElementById('asof-week').textContent  =
+    '주간 기준 KB ' + (kb.asof.weekly||'–') + (rebOK ? ' · 부동산원 ' + (reb.asof.weekly||'–') : '');
   document.getElementById('asof-month').textContent = '월간 기준 ' + (kb.asof.monthly||'').slice(0,7);
   document.getElementById('updated').textContent    = '갱신 ' + kb.updated;
+  if(!rebOK){
+    const b=document.createElement('span'); b.className='badge warn';
+    b.textContent='부동산원 데이터 준비중(KB만 표시)';
+    document.querySelector('.badges').appendChild(b);
+  }
 
-  const seoulKB  = kb.summary.find(s=>s.region==='서울');
-  const seoulREB = reb.summary.find(s=>s.region==='서울');
+  const kbBy  = Object.fromEntries(kb.summary.map(s=>[s.region,s]));
+  const rebBy = Object.fromEntries((reb.summary||[]).map(s=>[s.region,s]));
 
-  /* ---------- KPI 카드 (KB vs 부동산원) ---------- */
+  /* ---------- 지역 선택 ---------- */
+  const regions = kb.summary.map(s=>s.region);   // 전국 + 17개 시도
+  const regionSel = document.getElementById('regionSel');
+  regionSel.innerHTML = regions.map(r=>`<option ${r==='서울'?'selected':''}>${r}</option>`).join('');
+  let CUR = '서울';
+
+  /* ---------- KPI 카드 (선택 지역, KB vs 부동산원) ---------- */
+  function cardHtml(label, gap, rows){
+    return `<div class="card"><div class="label"><span>${label}</span><span class="gap">${gap}</span></div>`+
+      rows.map(r=>`<div class="srcrow"><span class="src"><span class="dot" style="background:${r.color}"></span>${r.src}</span>
+        <span><span class="v">${r.v}</span>${r.chg||''}</span></div>`).join('')+`</div>`;
+  }
   function avgCard(label, kbEok, rebEok){
     const gap = (kbEok!=null&&rebEok!=null) ? '격차 '+(kbEok-rebEok>=0?'+':'')+(kbEok-rebEok).toFixed(2)+'억' : '';
     return cardHtml(label, gap,
@@ -209,58 +242,57 @@ Promise.all([
       [{src:'KB', color:KB, v:kc!=null?kc.toFixed(2):'–', chg:changeHtml(kc,kp)},
        {src:'부동산원', color:REB, v:rc!=null?rc.toFixed(2):'–', chg:changeHtml(rc,rp)}]);
   }
-  function cardHtml(label, gap, rows){
-    return `<div class="card"><div class="label"><span>${label}</span><span class="gap">${gap}</span></div>`+
-      rows.map(r=>`<div class="srcrow"><span class="src"><span class="dot" style="background:${r.color}"></span>${r.src}</span>
-        <span><span class="v">${r.v}</span>${r.chg||''}</span></div>`).join('')+`</div>`;
+  function ratioCard(label, val){
+    return cardHtml(label, '', [{src:'KB', color:KB, v:val!=null?val.toFixed(1)+'%':'–'}]);
   }
-  document.getElementById('cards').innerHTML = [
-    avgCard('매매 평균가 (서울)', seoulKB?.매매평균억, seoulREB?.매매평균억),
-    avgCard('전세 평균가 (서울)', seoulKB?.전세평균억, seoulREB?.전세평균억),
-    idxCard('매매 가격지수 (서울·전주대비)', kb.series.매매지수.서울, reb.series.매매지수.서울),
-    idxCard('전세 가격지수 (서울·전주대비)', kb.series.전세지수.서울, reb.series.전세지수.서울),
-  ].join('');
+  function drawCards(region){
+    const k=kbBy[region]||{}, r=rebBy[region]||{};
+    document.getElementById('cards').innerHTML = [
+      avgCard('매매 평균가', k.매매평균억, r.매매평균억),
+      avgCard('전세 평균가', k.전세평균억, r.전세평균억),
+      idxCard('매매 가격지수 (전주대비)', kb.series.매매지수[region], (reb.series.매매지수||{})[region]),
+      idxCard('전세 가격지수 (전주대비)', kb.series.전세지수[region], (reb.series.전세지수||{})[region]),
+      ratioCard('전세가율 (KB)', k.전세가율),
+    ].join('');
+  }
 
-  /* ---------- 1) 서울 가격지수 추이 (재지수화) ---------- */
+  /* ---------- 1) 가격지수 추이 (재지수화) ---------- */
   let idxChartObj;
-  function drawIdx(metric){
-    const kS=kb.series[metric], rS=reb.series[metric];
+  function drawIdx(region, metric){
+    const kS=kb.series[metric], rS=reb.series[metric]||{dates:[]};
     const labels=unionDates(kS.dates, rS.dates);
-    const aKB=align(labels, kS.dates, kS.서울), aREB=align(labels, rS.dates, rS.서울);
+    const aKB=align(labels, kS.dates, kS[region]), aREB=align(labels, rS.dates, rS[region]);
     const [nKB,nREB]=rebase(labels, aKB, aREB);
     if(idxChartObj) idxChartObj.destroy();
     idxChartObj=new Chart(idxChart,{type:'line',data:{labels,
       datasets:[ds('KB',nKB,KB,true), ds('부동산원',nREB,REB,false)]},options:lineOpts()});
   }
-  drawIdx('매매지수');
-  idxMetric.onchange=e=>drawIdx(e.target.value);
 
-  /* ---------- 2) 서울 평균가격 추이 (억, 직접 비교) ---------- */
+  /* ---------- 2) 평균가격 추이 (억, 직접 비교) ---------- */
   let avgChartObj;
-  function drawAvg(metric){
-    const kS=kb.series[metric], rS=reb.series[metric];
+  function drawAvg(region, metric){
+    const kS=kb.series[metric], rS=reb.series[metric]||{dates:[]};
     const labels=unionDates(kS.dates, rS.dates);
-    const aKB=align(labels, kS.dates, kS.서울).map(eok);
-    const aREB=align(labels, rS.dates, rS.서울).map(eok);
+    const eok = v => v==null ? null : +(v/10000).toFixed(2);   // 만원 -> 억
+    const aKB=align(labels, kS.dates, kS[region]).map(eok);
+    const aREB=align(labels, rS.dates, rS[region]).map(eok);
     if(avgChartObj) avgChartObj.destroy();
     avgChartObj=new Chart(avgChart,{type:'line',data:{labels,
       datasets:[ds('KB',aKB,KB,true), ds('부동산원',aREB,REB,false)]},
       options:lineOpts(v=>v.toFixed(2)+'억')});
   }
-  drawAvg('매매평균');
-  avgMetric.onchange=e=>drawAvg(e.target.value);
 
-  /* ---------- 3) 자치구별 지수 비교 (그룹 막대) ---------- */
-  let guChartObj;
-  function drawGu(metric){
-    const kS=kb.series[metric], rS=reb.series[metric];
+  /* ---------- 3) 시도별 가격지수 비교 (그룹 막대) ---------- */
+  let sidoIdxObj;
+  function drawSidoIdx(metric){
+    const kS=kb.series[metric], rS=reb.series[metric]||{};
     const last = S => { const v=(S||[]).filter(x=>x!=null); return v.at(-1); };
-    const gus = kb.summary.filter(s=>s.region!=='서울').map(s=>s.region);
-    const rows = gus.map(g=>({g, kb:last(kS[g]), reb:last(rS[g])}))
+    const sidos = regions.filter(r=>r!=='전국');
+    const rows = sidos.map(g=>({g, kb:last(kS[g]), reb:last(rS[g])}))
                     .filter(x=>x.kb!=null||x.reb!=null)
                     .sort((a,b)=>(b.kb??-1)-(a.kb??-1));
-    if(guChartObj) guChartObj.destroy();
-    guChartObj=new Chart(guChart,{type:'bar',data:{labels:rows.map(x=>x.g),
+    if(sidoIdxObj) sidoIdxObj.destroy();
+    sidoIdxObj=new Chart(sidoIdxChart,{type:'bar',data:{labels:rows.map(x=>x.g),
       datasets:[
         {label:'KB',data:rows.map(x=>x.kb),backgroundColor:KB,borderRadius:3},
         {label:'부동산원',data:rows.map(x=>x.reb),backgroundColor:REB,borderRadius:3},
@@ -269,23 +301,47 @@ Promise.all([
         plugins:{legend:{position:'top',labels:{boxWidth:12,usePointStyle:true}}},
         scales:{x:{grid:{color:GRID},suggestedMin:80},y:{grid:{display:false},ticks:{font:{size:11}}}}}});
   }
-  drawGu('매매지수');
-  guMetric.onchange=e=>drawGu(e.target.value);
 
-  /* ---------- 4) 자치구별 매매지수 추이 (재지수화) ---------- */
-  const guNames=Object.keys(kb.series.매매지수).filter(k=>k!=='dates'&&k!=='서울');
-  guSel.innerHTML=guNames.map(g=>`<option ${g==='강남구'?'selected':''}>${g}</option>`).join('');
-  let guTrendObj;
-  function drawTrend(gu){
-    const kS=kb.series.매매지수, rS=reb.series.매매지수;
-    const labels=unionDates(kS.dates, rS.dates);
-    const [nKB,nREB]=rebase(labels, align(labels,kS.dates,kS[gu]), align(labels,rS.dates,rS[gu]));
-    if(guTrendObj) guTrendObj.destroy();
-    guTrendObj=new Chart(guTrendChart,{type:'line',data:{labels,
-      datasets:[ds('KB '+gu,nKB,KB,false), ds('부동산원 '+gu,nREB,REB,false)]},options:lineOpts()});
+  /* ---------- 4) 시도별 평균가격 비교 (억, 그룹 막대) ---------- */
+  let sidoAvgObj;
+  function drawSidoAvg(metric){
+    const kS=kb.series[metric], rS=reb.series[metric]||{};
+    const last = S => { const v=(S||[]).filter(x=>x!=null); return v.at(-1); };
+    const eok = v => v==null ? null : +(v/10000).toFixed(2);
+    const sidos = regions.filter(r=>r!=='전국');
+    const rows = sidos.map(g=>({g, kb:eok(last(kS[g])), reb:eok(last(rS[g]))}))
+                    .filter(x=>x.kb!=null||x.reb!=null)
+                    .sort((a,b)=>(b.kb??-1)-(a.kb??-1));
+    if(sidoAvgObj) sidoAvgObj.destroy();
+    sidoAvgObj=new Chart(sidoAvgChart,{type:'bar',data:{labels:rows.map(x=>x.g),
+      datasets:[
+        {label:'KB',data:rows.map(x=>x.kb),backgroundColor:KB,borderRadius:3},
+        {label:'부동산원',data:rows.map(x=>x.reb),backgroundColor:REB,borderRadius:3},
+      ]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'top',labels:{boxWidth:12,usePointStyle:true}},
+          tooltip:{callbacks:{label:c=>c.dataset.label+': '+(c.parsed.x==null?'–':c.parsed.x.toFixed(2)+'억')}}},
+        scales:{x:{grid:{color:GRID},ticks:{callback:v=>v+'억'}},y:{grid:{display:false},ticks:{font:{size:11}}}}}});
   }
-  drawTrend('강남구');
-  guSel.onchange=e=>drawTrend(e.target.value);
+
+  /* ---------- 이벤트 배선 ---------- */
+  function refreshRegion(){
+    CUR = regionSel.value;
+    document.getElementById('idxTitle').textContent = CUR;
+    document.getElementById('avgTitle').textContent = CUR;
+    drawCards(CUR);
+    drawIdx(CUR, idxMetric.value);
+    drawAvg(CUR, avgMetric.value);
+  }
+  regionSel.onchange = refreshRegion;
+  idxMetric.onchange = e=>drawIdx(CUR, e.target.value);
+  avgMetric.onchange = e=>drawAvg(CUR, e.target.value);
+  sidoIdxMetric.onchange = e=>drawSidoIdx(e.target.value);
+  sidoAvgMetric.onchange = e=>drawSidoAvg(e.target.value);
+
+  refreshRegion();
+  drawSidoIdx('매매지수');
+  drawSidoAvg('매매평균');
 });
 </script>
 </body>
