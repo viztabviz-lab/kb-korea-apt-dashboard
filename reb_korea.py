@@ -265,21 +265,31 @@ def write_json(recs):
 # CLS_FULLNM 이 '<시도> <시군구>' 처럼 공백을 포함하면 시군구 레벨로 본다.
 # ---------------------------------------------------------------------------
 
+def sigungu_name(tokens):
+    """CLS_FULLNM 토큰('시도>권역>…>시군구')에서 표시용 시군구명 생성.
+    시도/권역(…권)은 빼고, 상위 시(청주시 등)+말단(상당구)을 공백으로 잇는다.
+    예) '충북>청주시>상당구' → '청주시 상당구', '경기>경부1권>과천시' → '과천시'"""
+    parts = [t for t in tokens[1:] if not t.endswith("권")]
+    return " ".join(parts)
+
+
 def discover_sigungu(statbl_id, cycle):
-    """{시도: {시군구명: CLS_ID}}"""
+    """{시도: {시군구명: CLS_ID}} — CLS_FULLNM 은 '>' 로 구분된 계층 경로"""
     total, _ = call(statbl_id, cycle, psize=1)
     last_page = max(1, math.ceil(total / PAGE))
     _, rows = call(statbl_id, cycle, pindex=last_page, psize=PAGE)
     out = {}
     for r in rows:
         full = (r.get("CLS_FULLNM") or "").strip()
-        toks = full.split()
+        toks = [t.strip() for t in full.split(">") if t.strip()]
         if len(toks) < 2:
             continue
         parent = SIDO_CANON.get(toks[0])
         if not parent:
             continue
-        name = " ".join(toks[1:])
+        name = sigungu_name(toks)
+        if not name:
+            continue
         out.setdefault(parent, {}).setdefault(name, r["CLS_ID"])
     return out
 
