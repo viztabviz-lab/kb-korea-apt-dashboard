@@ -105,26 +105,26 @@
 
     <div class="panel full">
       <div class="row">
-        <h3 style="margin:0">시도별 가격지수 비교</h3>
-        <select id="sidoIdxMetric">
+        <h3 style="margin:0" id="p3Title">시도별 가격지수 비교</h3>
+        <select id="sidoIdxMetric" title="가격지수 종류">
           <option value="매매지수">매매 가격지수</option>
           <option value="전세지수">전세 가격지수</option>
         </select>
-        <span class="desc" style="margin:0">17개 시도 최신 주간지수 · KB 높은 순</span>
+        <span class="desc" style="margin:0" id="p3Desc">17개 시도 최신 주간지수 · KB 높은 순</span>
       </div>
-      <div class="chartbox" style="height:430px"><canvas id="sidoIdxChart"></canvas></div>
+      <div class="chartbox" id="p3Box" style="height:430px"><canvas id="sidoIdxChart"></canvas></div>
     </div>
 
     <div class="panel full">
       <div class="row">
-        <h3 style="margin:0">시도별 평균가격 비교</h3>
-        <select id="sidoAvgMetric">
+        <h3 style="margin:0" id="p4Title">시도별 평균가격 비교</h3>
+        <span id="avgMetricWrap"><select id="sidoAvgMetric" title="평균가격 종류">
           <option value="매매평균">매매 평균가격</option>
           <option value="전세평균">전세 평균가격</option>
-        </select>
-        <span class="desc" style="margin:0">17개 시도 최신 월간 평균가격(억) · KB 높은 순</span>
+        </select></span>
+        <span class="desc" style="margin:0" id="p4Desc">17개 시도 최신 월간 평균가격(억) · KB 높은 순</span>
       </div>
-      <div class="chartbox" style="height:430px"><canvas id="sidoAvgChart"></canvas></div>
+      <div class="chartbox" id="p4Box" style="height:430px"><canvas id="sidoAvgChart"></canvas></div>
     </div>
   </div>
 
@@ -278,46 +278,86 @@ Promise.all([
       options:lineOpts(v=>v.toFixed(2)+'억')});
   }
 
-  /* ---------- 3) 시도별 가격지수 비교 (그룹 막대) ---------- */
-  let sidoIdxObj;
-  function drawSidoIdx(metric){
-    const kS=kb.series[metric], rS=reb.series[metric]||{};
-    const last = S => { const v=(S||[]).filter(x=>x!=null); return v.at(-1); };
-    const sidos = regions.filter(r=>r!=='전국');
-    const rows = sidos.map(g=>({g, kb:last(kS[g]), reb:last(rS[g])}))
-                    .filter(x=>x.kb!=null||x.reb!=null)
-                    .sort((a,b)=>(b.kb??-1)-(a.kb??-1));
-    if(sidoIdxObj) sidoIdxObj.destroy();
-    sidoIdxObj=new Chart(sidoIdxChart,{type:'bar',data:{labels:rows.map(x=>x.g),
-      datasets:[
-        {label:'KB',data:rows.map(x=>x.kb),backgroundColor:KB,borderRadius:3},
-        {label:'부동산원',data:rows.map(x=>x.reb),backgroundColor:REB,borderRadius:3},
-      ]},
-      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{position:'top',labels:{boxWidth:12,usePointStyle:true}}},
-        scales:{x:{grid:{color:GRID},suggestedMin:80},y:{grid:{display:false},ticks:{font:{size:11}}}}}});
+  /* ---------- 시도/시군구 드릴다운 공용 ---------- */
+  const SLUG={서울:'seoul',경기:'gyeonggi',인천:'incheon',부산:'busan',대구:'daegu',
+    광주:'gwangju',대전:'daejeon',울산:'ulsan',세종:'sejong',강원:'gangwon',충북:'chungbuk',
+    충남:'chungnam',전북:'jeonbuk',전남:'jeonnam',경북:'gyeongbuk',경남:'gyeongnam',제주:'jeju'};
+  const sgCache={};
+  async function loadSg(name){
+    if(sgCache[name]) return sgCache[name];
+    const slug=SLUG[name];
+    const [k,r]=await Promise.all([
+      fetch(`data/sg/kb/${slug}.json?_=`+Date.now()).then(x=>x.ok?x.json():null).catch(()=>null),
+      fetch(`data/sg/reb/${slug}.json?_=`+Date.now()).then(x=>x.ok?x.json():null).catch(()=>null),
+    ]);
+    return sgCache[name]={kb:k, reb:r};
+  }
+  const lastNN = S => { const v=(S||[]).filter(x=>x!=null); return v.at(-1); };
+  /* 두 series(객체) 의 지역별 최신값을 KB 내림차순으로 정렬한 행 배열 (전국 제외) */
+  function rowsFrom(kS, rS, conv){
+    const names=[...new Set([...Object.keys(kS||{}), ...Object.keys(rS||{})])]
+                  .filter(k=>k!=='dates'&&k!=='전국');
+    return names.map(g=>({g, kb:conv(lastNN((kS||{})[g])), reb:conv(lastNN((rS||{})[g]))}))
+      .filter(x=>x.kb!=null||x.reb!=null).sort((a,b)=>(b.kb??-1)-(a.kb??-1));
+  }
+  const setBoxH = (box,n)=>{ box.style.height = Math.max(430, n*24+70)+'px'; };
+  function barOpts(xfmt, min){
+    return {indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{boxWidth:12,usePointStyle:true}},
+        tooltip:{callbacks: xfmt?{label:c=>c.dataset.label+': '+(c.parsed.x==null?'–':xfmt(c.parsed.x))}:{}}},
+      scales:{x:{grid:{color:GRID},suggestedMin:min,ticks:xfmt?{callback:v=>xfmt(v)}:{}},
+        y:{grid:{display:false},ticks:{font:{size:11}}}}};
+  }
+  function hbar(canvasEl, prev, rows, opts, kbOnly){
+    if(prev) prev.destroy();
+    const datasets=[{label:'KB',data:rows.map(x=>x.kb),backgroundColor:KB,borderRadius:3}];
+    if(!kbOnly) datasets.push({label:'부동산원',data:rows.map(x=>x.reb),backgroundColor:REB,borderRadius:3});
+    return new Chart(canvasEl,{type:'bar',data:{labels:rows.map(x=>x.g),datasets},options:opts});
   }
 
-  /* ---------- 4) 시도별 평균가격 비교 (억, 그룹 막대) ---------- */
-  let sidoAvgObj;
-  function drawSidoAvg(metric){
-    const kS=kb.series[metric], rS=reb.series[metric]||{};
-    const last = S => { const v=(S||[]).filter(x=>x!=null); return v.at(-1); };
-    const eok = v => v==null ? null : +(v/10000).toFixed(2);
-    const sidos = regions.filter(r=>r!=='전국');
-    const rows = sidos.map(g=>({g, kb:eok(last(kS[g])), reb:eok(last(rS[g]))}))
-                    .filter(x=>x.kb!=null||x.reb!=null)
-                    .sort((a,b)=>(b.kb??-1)-(a.kb??-1));
-    if(sidoAvgObj) sidoAvgObj.destroy();
-    sidoAvgObj=new Chart(sidoAvgChart,{type:'bar',data:{labels:rows.map(x=>x.g),
-      datasets:[
-        {label:'KB',data:rows.map(x=>x.kb),backgroundColor:KB,borderRadius:3},
-        {label:'부동산원',data:rows.map(x=>x.reb),backgroundColor:REB,borderRadius:3},
-      ]},
-      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{position:'top',labels:{boxWidth:12,usePointStyle:true}},
-          tooltip:{callbacks:{label:c=>c.dataset.label+': '+(c.parsed.x==null?'–':c.parsed.x.toFixed(2)+'억')}}},
-        scales:{x:{grid:{color:GRID},ticks:{callback:v=>v+'억'}},y:{grid:{display:false},ticks:{font:{size:11}}}}}});
+  /* ---------- 패널3) 가격지수 비교: 전국→시도, 시도→시군구 ---------- */
+  let p3Obj;
+  async function drawPanel3(){
+    const region=CUR, metric=sidoIdxMetric.value;
+    let rows, title, desc;
+    if(region==='전국'){
+      rows=rowsFrom(kb.series[metric], reb.series[metric]||{}, v=>v);
+      title='시도별 가격지수 비교'; desc='17개 시도 최신 주간지수 · KB 높은 순';
+    }else{
+      const sg=await loadSg(region); if(CUR!==region) return;
+      rows=rowsFrom(sg.kb&&sg.kb.series[metric], sg.reb&&sg.reb.series[metric], v=>v);
+      title=`${region} 시군구별 가격지수 비교`;
+      desc=rows.length?'최신 주간지수 · KB 높은 순':'시군구 데이터 없음';
+    }
+    document.getElementById('p3Title').textContent=title;
+    document.getElementById('p3Desc').textContent=desc;
+    setBoxH(document.getElementById('p3Box'), rows.length);
+    p3Obj=hbar(sidoIdxChart, p3Obj, rows, barOpts(null,80), false);
+  }
+
+  /* ---------- 패널4) 전국→시도 평균가격 / 시도→시군구 전세가율(KB) ---------- */
+  let p4Obj;
+  async function drawPanel4(){
+    const region=CUR, wrap=document.getElementById('avgMetricWrap');
+    let rows, title, desc, opts, kbOnly;
+    if(region==='전국'){
+      wrap.style.display='';
+      const metric=sidoAvgMetric.value;
+      rows=rowsFrom(kb.series[metric], reb.series[metric]||{}, v=>v==null?null:+(v/10000).toFixed(2));
+      title='시도별 평균가격 비교'; desc='17개 시도 최신 월간 평균가격(억) · KB 높은 순';
+      opts=barOpts(v=>v.toFixed(2)+'억', 0); kbOnly=false;
+    }else{
+      wrap.style.display='none';
+      const sg=await loadSg(region); if(CUR!==region) return;
+      rows=rowsFrom(sg.kb&&sg.kb.series['전세가율'], {}, v=>v);
+      title=`${region} 시군구별 전세가율 비교 (KB)`;
+      desc=rows.length?'최신 월간 전세가율 · 시군구 평균가격은 미제공 · KB 높은 순':'시군구 데이터 없음';
+      opts=barOpts(v=>v.toFixed(1)+'%', 0); kbOnly=true;
+    }
+    document.getElementById('p4Title').textContent=title;
+    document.getElementById('p4Desc').textContent=desc;
+    setBoxH(document.getElementById('p4Box'), rows.length);
+    p4Obj=hbar(sidoAvgChart, p4Obj, rows, opts, kbOnly);
   }
 
   /* ---------- 이벤트 배선 ---------- */
@@ -328,16 +368,16 @@ Promise.all([
     drawCards(CUR);
     drawIdx(CUR, idxMetric.value);
     drawAvg(CUR, avgMetric.value);
+    drawPanel3();
+    drawPanel4();
   }
   regionSel.onchange = refreshRegion;
   idxMetric.onchange = e=>drawIdx(CUR, e.target.value);
   avgMetric.onchange = e=>drawAvg(CUR, e.target.value);
-  sidoIdxMetric.onchange = e=>drawSidoIdx(e.target.value);
-  sidoAvgMetric.onchange = e=>drawSidoAvg(e.target.value);
+  sidoIdxMetric.onchange = ()=>drawPanel3();
+  sidoAvgMetric.onchange = ()=>drawPanel4();
 
   refreshRegion();
-  drawSidoIdx('매매지수');
-  drawSidoAvg('매매평균');
 });
 </script>
 </body>

@@ -81,6 +81,13 @@ SIDO_CANON = {
 }
 SIDO_ORDER = ["전국", "서울", "경기", "인천", "부산", "대구", "광주", "대전", "울산",
               "세종", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주"]
+SLUG = {
+    "서울": "seoul", "경기": "gyeonggi", "인천": "incheon", "부산": "busan",
+    "대구": "daegu", "광주": "gwangju", "대전": "daejeon", "울산": "ulsan",
+    "세종": "sejong", "강원": "gangwon", "충북": "chungbuk", "충남": "chungnam",
+    "전북": "jeonbuk", "전남": "jeonnam", "경북": "gyeongbuk", "경남": "gyeongnam",
+    "제주": "jeju",
+}
 PAGE = 1000
 
 
@@ -252,6 +259,82 @@ def write_json(recs):
     return path
 
 
+# ---------------------------------------------------------------------------
+# 시군구 단위(드릴다운): 부동산원은 시군구 단위로 매매/전세 가격지수를 제공한다
+# (평균가격·전세가율은 시군구 단위 미제공). 시도별로 data/sg/reb/<slug>.json 생성.
+# CLS_FULLNM 이 '<시도> <시군구>' 처럼 공백을 포함하면 시군구 레벨로 본다.
+# ---------------------------------------------------------------------------
+
+def discover_sigungu(statbl_id, cycle):
+    """{시도: {시군구명: CLS_ID}}"""
+    total, _ = call(statbl_id, cycle, psize=1)
+    last_page = max(1, math.ceil(total / PAGE))
+    _, rows = call(statbl_id, cycle, pindex=last_page, psize=PAGE)
+    out = {}
+    for r in rows:
+        full = (r.get("CLS_FULLNM") or "").strip()
+        toks = full.split()
+        if len(toks) < 2:
+            continue
+        parent = SIDO_CANON.get(toks[0])
+        if not parent:
+            continue
+        name = " ".join(toks[1:])
+        out.setdefault(parent, {}).setdefault(name, r["CLS_ID"])
+    return out
+
+
+def build_series_named(recs, 지표, 거래):
+    sub = [r for r in recs if r["지표"] == 지표 and r["거래구분"] == 거래]
+    dates = sorted({r["날짜"] for r in sub})
+    regions = []
+    for r in sub:
+        if r["지역명"] not in regions:
+            regions.append(r["지역명"])
+    idx = {(r["날짜"], r["지역명"]): r["값"] for r in sub}
+    out = {"dates": dates}
+    for g in regions:
+        out[g] = [idx.get((d, g)) for d in dates]
+    return out
+
+
+def write_sigungu():
+    base = OUT / "sg" / "reb"
+    base.mkdir(parents=True, exist_ok=True)
+    # 인덱스 표별로 한 번씩만 시군구 CLS_ID를 발견(추가 스냅샷 호출 절약)
+    sg_maps = {}
+    for 지표, 거래, sid, cycle in INDEX_TABLES:
+        sg_maps[(sid, 거래)] = discover_sigungu(sid, cycle)
+    total = 0
+    for name in SIDO_ORDER:
+        if name == "전국":
+            continue
+        try:
+            recs = []
+            for 지표, 거래, sid, cycle in INDEX_TABLES:
+                gumap = sg_maps[(sid, 거래)].get(name, {})
+                for gu, cid in gumap.items():
+                    recs += fetch_region_series(sid, cycle, gu, cid, 지표, 거래, to_manwon=False)
+            if not recs:
+                continue
+            weekly = sorted({r["날짜"] for r in recs})
+            payload = {
+                "asof": {"weekly": weekly[-1] if weekly else None},
+                "series": {
+                    "매매지수": build_series_named(recs, "가격지수", "매매"),
+                    "전세지수": build_series_named(recs, "가격지수", "전세"),
+                },
+            }
+            with open(base / f"{SLUG[name]}.json", "w", encoding="utf-8") as f:
+                json.dump(payload, f, ensure_ascii=False, separators=(",", ":"))
+            n = len(payload["series"]["매매지수"]) - 1
+            total += n
+            print(f"  · {name}: 시군구 {n}개")
+        except Exception as e:                 # 한 시도가 실패해도 나머지는 계속
+            print(f"  · {name}: 시군구 수집 실패 → 건너뜀 ({e})")
+    return total
+
+
 def main():
     print(f"[부동산원 전국 아파트 시세 수집] {dt.datetime.now():%Y-%m-%d %H:%M}")
     recs = gather()
@@ -263,6 +346,9 @@ def main():
     print(f"\n완료 · 레코드 {len(recs):,}건 · 최신 기준일 {last}")
     print(f"  - {csv_path}")
     print(f"  - {json_path}")
+    print("· 시군구 단위(드릴다운) 수집 ...")
+    sg_total = write_sigungu()
+    print(f"  - data/sg/reb/*.json (시군구 총 {sg_total}개)")
 
 
 if __name__ == "__main__":
