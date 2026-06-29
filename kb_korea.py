@@ -283,10 +283,11 @@ def build_series_named(recs, 지표, 거래):
 
 
 def write_sigungu():
+    """시도별 시군구 파일 작성 후 [{name, slug, regions}] 반환"""
     base = OUT / "sg" / "kb"
     base.mkdir(parents=True, exist_ok=True)
     codes = fetch_sido_codes()
-    total = 0
+    info = []
     for name in SIDO_ORDER:
         if name == "전국":
             continue
@@ -308,9 +309,38 @@ def write_sigungu():
         with open(base / f"{SLUG[name]}.json", "w", encoding="utf-8") as f:
             json.dump(payload, f, ensure_ascii=False, separators=(",", ":"))
         n = len(payload["series"]["매매지수"]) - 1
-        total += n
+        info.append({"name": name, "slug": SLUG[name], "regions": n})
         print(f"  · {name}: 시군구 {n}개")
-    return total
+    return info
+
+
+def write_manifest(recs, sg_info, asof):
+    """다운로더 페이지(download.html)용 파일 목록 manifest"""
+    def sz(rel):
+        p = OUT / rel
+        return p.stat().st_size if p.exists() else 0
+
+    updated = asof.get("weekly") or dt.date.today().isoformat()
+    items = [
+        {"source": "KB부동산", "scope": "전국", "name": "전국·시도 시계열",
+         "file": "data/kb_korea_시계열.csv", "format": "CSV",
+         "bytes": sz("kb_korea_시계열.csv"),
+         "detail": f"전국+17개 시도 · {len(recs):,}행 · 매매/전세 지수·평균가·전세가율 (long-format)"},
+        {"source": "KB부동산", "scope": "전국", "name": "전국·시도 대시보드 데이터",
+         "file": "data/kb_korea.json", "format": "JSON",
+         "bytes": sz("kb_korea.json"),
+         "detail": "대시보드용 compact JSON (요약 + 시계열)"},
+    ]
+    for s in sg_info:
+        items.append({
+            "source": "KB부동산", "scope": "시군구", "name": f"{s['name']} 시군구",
+            "file": f"data/sg/kb/{s['slug']}.json", "format": "JSON",
+            "bytes": sz(f"sg/kb/{s['slug']}.json"),
+            "detail": f"{s['name']} {s['regions']}개 시군구 · 매매/전세 지수·전세가율",
+        })
+    payload = {"source": "KB부동산", "updated": updated, "items": items}
+    with open(OUT / "downloads_kb.json", "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=1)
 
 
 def main():
@@ -323,8 +353,11 @@ def main():
     print(f"  - {csv_path}")
     print(f"  - {json_path}")
     print("· 시군구 단위(드릴다운) 수집 ...")
-    sg_total = write_sigungu()
+    sg_info = write_sigungu()
+    sg_total = sum(s["regions"] for s in sg_info)
     print(f"  - data/sg/kb/*.json (시군구 총 {sg_total}개)")
+    write_manifest(recs, sg_info, {"weekly": last})
+    print("  - data/downloads_kb.json")
     try:
         xlsx_path = write_excel(recs)
         print(f"  - {xlsx_path}")

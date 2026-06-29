@@ -311,13 +311,14 @@ def build_series_named(recs, 지표, 거래):
 
 
 def write_sigungu():
+    """시도별 시군구 파일 작성 후 [{name, slug, regions}] 반환"""
     base = OUT / "sg" / "reb"
     base.mkdir(parents=True, exist_ok=True)
     # 인덱스 표별로 한 번씩만 시군구 CLS_ID를 발견(추가 스냅샷 호출 절약)
     sg_maps = {}
     for 지표, 거래, sid, cycle in INDEX_TABLES:
         sg_maps[(sid, 거래)] = discover_sigungu(sid, cycle)
-    total = 0
+    info = []
     for name in SIDO_ORDER:
         if name == "전국":
             continue
@@ -340,11 +341,39 @@ def write_sigungu():
             with open(base / f"{SLUG[name]}.json", "w", encoding="utf-8") as f:
                 json.dump(payload, f, ensure_ascii=False, separators=(",", ":"))
             n = len(payload["series"]["매매지수"]) - 1
-            total += n
+            info.append({"name": name, "slug": SLUG[name], "regions": n})
             print(f"  · {name}: 시군구 {n}개")
         except Exception as e:                 # 한 시도가 실패해도 나머지는 계속
             print(f"  · {name}: 시군구 수집 실패 → 건너뜀 ({e})")
-    return total
+    return info
+
+
+def write_manifest(recs, sg_info, updated):
+    """다운로더 페이지(download.html)용 파일 목록 manifest"""
+    def sz(rel):
+        p = OUT / rel
+        return p.stat().st_size if p.exists() else 0
+
+    items = [
+        {"source": "한국부동산원", "scope": "전국", "name": "전국·시도 시계열",
+         "file": "data/reb_korea_시계열.csv", "format": "CSV",
+         "bytes": sz("reb_korea_시계열.csv"),
+         "detail": f"전국+17개 시도 · {len(recs):,}행 · 매매/전세 지수·평균가 (long-format)"},
+        {"source": "한국부동산원", "scope": "전국", "name": "전국·시도 대시보드 데이터",
+         "file": "data/reb_korea.json", "format": "JSON",
+         "bytes": sz("reb_korea.json"),
+         "detail": "대시보드용 compact JSON (요약 + 시계열)"},
+    ]
+    for s in sg_info:
+        items.append({
+            "source": "한국부동산원", "scope": "시군구", "name": f"{s['name']} 시군구",
+            "file": f"data/sg/reb/{s['slug']}.json", "format": "JSON",
+            "bytes": sz(f"sg/reb/{s['slug']}.json"),
+            "detail": f"{s['name']} {s['regions']}개 시군구 · 매매/전세 지수",
+        })
+    payload = {"source": "한국부동산원", "updated": updated, "items": items}
+    with open(OUT / "downloads_reb.json", "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=1)
 
 
 def main():
@@ -359,8 +388,11 @@ def main():
     print(f"  - {csv_path}")
     print(f"  - {json_path}")
     print("· 시군구 단위(드릴다운) 수집 ...")
-    sg_total = write_sigungu()
+    sg_info = write_sigungu()
+    sg_total = sum(s["regions"] for s in sg_info)
     print(f"  - data/sg/reb/*.json (시군구 총 {sg_total}개)")
+    write_manifest(recs, sg_info, last)
+    print("  - data/downloads_reb.json")
 
 
 if __name__ == "__main__":

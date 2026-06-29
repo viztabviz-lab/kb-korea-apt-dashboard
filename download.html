@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>KB·부동산원 아파트 시세 데이터 다운로드</title>
+<style>
+  :root{
+    --bg:#0f1729; --panel:#16213a; --card:#1c2a47; --card-h:#243657;
+    --line:#2a3c5e; --txt:#e8eefb; --sub:#93a4c7; --accent:#3b82f6; --accent2:#22c55e;
+    --kb:#f5a623; --reb:#3b82f6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Pretendard','Malgun Gothic',system-ui,sans-serif;background:linear-gradient(160deg,#0b1322,#0f1729 60%);color:var(--txt);min-height:100vh}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 22px 60px}
+  header{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap}
+  header .brand{display:flex;align-items:center;gap:16px}
+  header h1{font-size:25px;line-height:1.25;margin:0 0 6px;letter-spacing:-.5px}
+  header p{margin:0;color:var(--sub);font-size:14px;line-height:1.4}
+  header h1 .kb{color:var(--kb)} header h1 .reb{color:var(--reb)}
+  .nav a{color:#60a5fa;text-decoration:none;font-size:13px}
+  .nav a:hover{text-decoration:underline}
+  .toolbar{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin:22px 0 16px;padding:16px 18px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+  .fld{display:flex;flex-direction:column;gap:6px}
+  .fld label{font-size:12px;color:var(--sub)}
+  .fld input{background:#0d1626;border:1px solid var(--line);color:var(--txt);padding:9px 11px;border-radius:9px;font-size:14px}
+  .search{flex:1;min-width:200px}
+  .btn{cursor:pointer;border:none;border-radius:9px;padding:10px 16px;font-size:14px;font-weight:600;transition:.15s}
+  .btn-all{background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;margin-left:auto}
+  .btn-all:hover{filter:brightness(1.08)}
+  .btn-all:disabled{opacity:.55;cursor:wait}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 18px;align-items:center}
+  .chip{cursor:pointer;padding:7px 15px;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--sub);font-size:13px;font-weight:600}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .count{color:inherit;opacity:.7;font-size:12px;margin-left:6px}
+  .note{color:var(--sub);font-size:13px;margin-left:6px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+  .card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:16px 17px;cursor:pointer;transition:.15s;overflow:hidden}
+  .card:hover{background:var(--card-h);border-color:var(--accent);transform:translateY(-2px)}
+  .card .top{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .card .ico{width:42px;height:42px;border-radius:11px;flex:none;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;letter-spacing:-.5px}
+  .card .nm{font-size:16px;font-weight:700;letter-spacing:-.3px}
+  .card .cat{font-size:12px;color:var(--sub);margin-top:2px}
+  .badge{display:inline-block;font-size:10.5px;font-weight:800;padding:2px 7px;border-radius:6px;letter-spacing:.3px;margin-left:6px;vertical-align:middle}
+  .badge.csv{background:#15402a;color:#7CFFB2;border:1px solid #1f6b45}
+  .badge.json{background:#3a2a14;color:#ffce85;border:1px solid #6b4a1f}
+  .card .detail{font-size:12.5px;color:var(--sub);line-height:1.5;background:#0d1626;border:1px solid var(--line);border-radius:8px;padding:9px 11px;min-height:46px}
+  .card .foot{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:var(--sub);margin-top:10px}
+  .card .dlhint{color:#9fd;font-weight:600}
+  .card .dl{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(15,23,41,.9);font-size:14px;font-weight:600;color:#9fd;text-align:center;padding:6px}
+  .card.loading .dl{display:flex} .card.done .dl{display:flex;color:#7CFFB2}
+  .card.err .dl{display:flex;color:#ff8a8a}
+  .spin{width:16px;height:16px;border:2px solid #3b82f6;border-top-color:transparent;border-radius:50%;display:inline-block;margin-right:8px;animation:sp .7s linear infinite;flex:none}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  footer{margin-top:30px;color:var(--sub);font-size:12px;line-height:1.7}
+  footer a{color:#60a5fa;text-decoration:none}
+  .overlay{position:fixed;inset:0;background:rgba(7,12,22,.82);display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;z-index:50}
+  .overlay.on{display:flex}
+  .overlay .box{background:var(--panel);border:1px solid var(--line);padding:26px 34px;border-radius:16px;text-align:center;min-width:320px}
+  .hint{font-size:12px;color:var(--sub);margin-top:4px}
+  #prog{color:#7CFFB2;font-weight:700;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div>
+        <h1><span class="kb">KB부동산</span> · <span class="reb">한국부동산원</span> 아파트 시세 데이터 다운로드</h1>
+        <p>전국·시도·시군구 시세를 <b>CSV·JSON</b>으로 받습니다. · Tableau 시각화 / 분석 실습용</p>
+      </div>
+    </div>
+    <div class="nav"><a href="index.html">← 시세 비교 대시보드</a></div>
+  </header>
+
+  <div class="toolbar">
+    <div class="fld search">
+      <label>데이터 검색</label>
+      <input id="q" type="text" placeholder="지역·지표 입력 (예: 서울, 경기, 시계열)" />
+    </div>
+    <button class="btn btn-all" id="allBtn">⬇ 전체 한번에 받기 (ZIP)</button>
+  </div>
+
+  <div class="chips" id="chips"></div>
+
+  <div class="grid" id="grid"></div>
+
+  <footer>
+    KB부동산 데이터허브 · 한국부동산원 R-ONE 의 아파트 매매/전세 시세를 그대로 제공합니다.
+    CSV는 바로 <b>Excel·Tableau</b>에 연결할 수 있고, 시군구 JSON은 지역별 시계열 구조입니다.<br>
+    데이터는 매주 자동 갱신됩니다. · <a href="index.html">대시보드</a>에서 비교 차트로도 볼 수 있습니다.
+  </footer>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="box">
+    <div><span class="spin"></span> 전체 데이터를 모으는 중…</div>
+    <div class="hint">완료되면 ZIP 파일이 자동으로 다운로드됩니다.</div>
+    <div id="prog">0 / 0</div>
+  </div>
+</div>
+
+<script>
+/* ---------- CRC32 + 무압축(STORED) ZIP ---------- */
+const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xedb88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function crc32(b){let c=0xffffffff;for(let i=0;i<b.length;i++)c=CRC[(c^b[i])&0xff]^(c>>>8);return (c^0xffffffff)>>>0;}
+const TE=new TextEncoder();
+function le(arr,val,size){for(let i=0;i<size;i++)arr.push((val>>>(8*i))&0xff);}
+function concat(chunks){let len=0;for(const c of chunks)len+=c.length;const out=new Uint8Array(len);let o=0;for(const c of chunks){out.set(c,o);o+=c.length;}return out;}
+function makeZip(files){ // files:[{name,data:Uint8Array}]
+  const chunks=[]; const central=[]; let offset=0;
+  for(const f of files){
+    const nameB=TE.encode(f.name); const data=f.data; const crc=crc32(data);
+    const lh=[]; le(lh,0x04034b50,4); le(lh,20,2); le(lh,0x0800,2); le(lh,0,2); le(lh,0,2); le(lh,0x21,2);
+    le(lh,crc,4); le(lh,data.length,4); le(lh,data.length,4); le(lh,nameB.length,2); le(lh,0,2);
+    const lhB=new Uint8Array(lh);
+    chunks.push(lhB,nameB,data);
+    const ch=[]; le(ch,0x02014b50,4); le(ch,20,2); le(ch,20,2); le(ch,0x0800,2); le(ch,0,2); le(ch,0,2); le(ch,0x21,2);
+    le(ch,crc,4); le(ch,data.length,4); le(ch,data.length,4); le(ch,nameB.length,2); le(ch,0,2); le(ch,0,2); le(ch,0,2); le(ch,0,2); le(ch,0,4); le(ch,offset,4);
+    central.push(new Uint8Array(ch),nameB);
+    offset += lhB.length + nameB.length + data.length;
+  }
+  let cdSize=0; for(const c of central)cdSize+=c.length;
+  const eo=[]; le(eo,0x06054b50,4); le(eo,0,2); le(eo,0,2); le(eo,files.length,2); le(eo,files.length,2); le(eo,cdSize,4); le(eo,offset,4); le(eo,0,2);
+  return concat([...chunks,...central,new Uint8Array(eo)]);
+}
+
+/* ---------- 다운로드 헬퍼 ---------- */
+function triggerDownload(bytes, filename, mime){
+  const blob=new Blob([bytes],{type:mime});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=filename; document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url); a.remove();},1500);
+}
+const MIME = fmt => fmt==='CSV' ? 'text/csv;charset=utf-8' : 'application/json';
+const fmtSize = n => n>=1048576 ? (n/1048576).toFixed(1)+' MB' : Math.round(n/1024)+' KB';
+const SRC = { 'KB부동산':{short:'KB', ico:'KB', color:'#f5a623'},
+              '한국부동산원':{short:'부동산원', ico:'원', color:'#3b82f6'} };
+const ext = it => it.format.toLowerCase();
+function dlName(it){
+  const s=(SRC[it.source]||{short:'data'}).short;
+  return `${s}_${it.name.replace(/[·\s]+/g,'_')}.${ext(it)}`;
+}
+function zipName(it){ return it.file.replace(/^data\//,''); }  // sg/kb/seoul.json 등 구조 유지
+
+/* ---------- UI ---------- */
+const grid=document.getElementById('grid');
+const qEl=document.getElementById('q');
+const chipsEl=document.getElementById('chips');
+let ITEMS=[]; let CATS=['전체']; let curCat='전체';
+
+async function loadManifest(url){
+  try{ const r=await fetch(url,{cache:'no-store'}); if(!r.ok) return null; return await r.json(); }
+  catch(e){ return null; }
+}
+
+function buildChips(){
+  chipsEl.innerHTML='';
+  CATS.forEach(cat=>{
+    const n = cat==='전체' ? ITEMS.length : ITEMS.filter(c=>c.source===cat).length;
+    const el=document.createElement('div');
+    el.className='chip'+(cat===curCat?' on':'');
+    el.innerHTML=cat+'<span class="count">'+n+'</span>';
+    el.onclick=()=>{ curCat=cat; [...chipsEl.querySelectorAll('.chip')].forEach(x=>x.classList.remove('on')); el.classList.add('on'); render(); };
+    chipsEl.appendChild(el);
+  });
+}
+
+function render(){
+  const q=qEl.value.trim().toLowerCase();
+  grid.innerHTML='';
+  const list=ITEMS.filter(c=>{
+    if(curCat!=='전체' && c.source!==curCat) return false;
+    if(q && !((c.name+' '+c.detail+' '+c.scope).toLowerCase().includes(q))) return false;
+    return true;
+  });
+  for(const c of list){
+    const s=SRC[c.source]||{ico:'?',color:'#666'};
+    const el=document.createElement('div');
+    el.className='card';
+    el.innerHTML=`
+      <div class="top">
+        <div class="ico" style="background:${s.color}">${s.ico}</div>
+        <div><div class="nm">${c.name}<span class="badge ${ext(c)}">${c.format}</span></div>
+          <div class="cat">${c.source} · ${c.scope}</div></div>
+      </div>
+      <div class="detail">${c.detail}</div>
+      <div class="foot"><span>기준 ${c.updated||'-'} · ${fmtSize(c.bytes||0)}</span><span class="dlhint">⬇ ${c.format} 받기</span></div>
+      <div class="dl"></div>`;
+    el.onclick=()=>downloadOne(c, el);
+    grid.appendChild(el);
+  }
+  if(!list.length) grid.innerHTML='<div style="color:#93a4c7;padding:30px">검색 결과가 없습니다.</div>';
+}
+
+async function fetchBytes(url){
+  const res=await fetch(url,{cache:'no-store'});
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  return new Uint8Array(await res.arrayBuffer());
+}
+
+async function downloadOne(c, card){
+  if(card.classList.contains('loading')) return;
+  const dl=card.querySelector('.dl');
+  card.className='card loading';
+  dl.innerHTML='<span class="spin"></span> 내려받는 중…';
+  try{
+    const bytes=await fetchBytes(c.file);
+    triggerDownload(bytes, dlName(c), MIME(c.format));
+    card.className='card done'; dl.textContent='✓ 완료';
+  }catch(e){
+    card.className='card err'; dl.textContent='✗ 실패 ('+e.message+')';
+  }
+  setTimeout(()=>{card.className='card';},1600);
+}
+
+document.getElementById('allBtn').onclick=async()=>{
+  const btn=document.getElementById('allBtn');
+  const ov=document.getElementById('overlay');
+  const prog=document.getElementById('prog');
+  btn.disabled=true; ov.classList.add('on');
+  const files=[]; let done=0;
+  prog.textContent=`0 / ${ITEMS.length}`;
+  for(const c of ITEMS){
+    try{ files.push({name:zipName(c), data:await fetchBytes(c.file)}); }catch(e){/* skip */}
+    done++; prog.textContent=`${done} / ${ITEMS.length}`;
+  }
+  try{
+    if(!files.length) throw new Error('받을 수 있는 파일이 없습니다.');
+    const zip=makeZip(files);
+    triggerDownload(zip, 'KB_부동산원_아파트시세_전체.zip', 'application/zip');
+  }catch(e){ alert('전체 다운로드 실패: '+e.message); }
+  ov.classList.remove('on'); btn.disabled=false;
+};
+
+qEl.oninput=render;
+
+(async function init(){
+  const [kb,reb]=await Promise.all([
+    loadManifest('data/downloads_kb.json?_='+Date.now()),
+    loadManifest('data/downloads_reb.json?_='+Date.now()),
+  ]);
+  const manifests=[kb,reb].filter(Boolean);
+  for(const m of manifests){
+    for(const it of m.items){ it.updated=it.updated||m.updated; ITEMS.push(it); }
+  }
+  CATS=['전체', ...[...new Set(ITEMS.map(c=>c.source))]];
+  if(!ITEMS.length){ grid.innerHTML='<div style="color:#93a4c7;padding:30px">데이터 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</div>'; return; }
+  buildChips();
+  render();
+})();
+</script>
+</body>
+</html>
