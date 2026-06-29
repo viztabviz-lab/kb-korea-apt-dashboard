@@ -340,8 +340,15 @@ def write_sigungu():
             }
             with open(base / f"{SLUG[name]}.json", "w", encoding="utf-8") as f:
                 json.dump(payload, f, ensure_ascii=False, separators=(",", ":"))
+            # 태블로용 long-format CSV (대시보드는 JSON, 다운로드는 CSV)
+            with open(base / f"{SLUG[name]}.csv", "w", newline="", encoding="utf-8-sig") as f:
+                w = csv.DictWriter(f, fieldnames=["날짜", "시도", "시군구", "지표", "거래구분", "값"])
+                w.writeheader()
+                for r in sorted(recs, key=lambda r: (r["지표"], r["거래구분"], r["지역명"], r["날짜"])):
+                    w.writerow({"날짜": r["날짜"], "시도": name, "시군구": r["지역명"],
+                                "지표": r["지표"], "거래구분": r["거래구분"], "값": r["값"]})
             n = len(payload["series"]["매매지수"]) - 1
-            info.append({"name": name, "slug": SLUG[name], "regions": n})
+            info.append({"name": name, "slug": SLUG[name], "regions": n, "rows": len(recs)})
             print(f"  · {name}: 시군구 {n}개")
         except Exception as e:                 # 한 시도가 실패해도 나머지는 계속
             print(f"  · {name}: 시군구 수집 실패 → 건너뜀 ({e})")
@@ -359,17 +366,13 @@ def write_manifest(recs, sg_info, updated):
          "file": "data/reb_korea_시계열.csv", "format": "CSV",
          "bytes": sz("reb_korea_시계열.csv"),
          "detail": f"전국+17개 시도 · {len(recs):,}행 · 매매/전세 지수·평균가 (long-format)"},
-        {"source": "한국부동산원", "scope": "전국", "name": "전국·시도 대시보드 데이터",
-         "file": "data/reb_korea.json", "format": "JSON",
-         "bytes": sz("reb_korea.json"),
-         "detail": "대시보드용 compact JSON (요약 + 시계열)"},
     ]
     for s in sg_info:
         items.append({
             "source": "한국부동산원", "scope": "시군구", "name": f"{s['name']} 시군구",
-            "file": f"data/sg/reb/{s['slug']}.json", "format": "JSON",
-            "bytes": sz(f"sg/reb/{s['slug']}.json"),
-            "detail": f"{s['name']} {s['regions']}개 시군구 · 매매/전세 지수",
+            "file": f"data/sg/reb/{s['slug']}.csv", "format": "CSV",
+            "bytes": sz(f"sg/reb/{s['slug']}.csv"),
+            "detail": f"{s['name']} {s['regions']}개 시군구 · {s.get('rows',0):,}행 · 매매/전세 지수 (long-format)",
         })
     payload = {"source": "한국부동산원", "updated": updated, "items": items}
     with open(OUT / "downloads_reb.json", "w", encoding="utf-8") as f:
