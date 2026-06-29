@@ -1,0 +1,168 @@
+{
+ "source": "한국부동산원",
+ "updated": "2026-06-22",
+ "items": [
+  {
+   "source": "한국부동산원",
+   "scope": "전국",
+   "name": "전국·시도 시계열",
+   "file": "data/reb_korea_시계열.csv",
+   "format": "CSV",
+   "bytes": 1543148,
+   "detail": "전국+17개 시도 · 32,608행 · 매매/전세 지수·평균가 (long-format)"
+  },
+  {
+   "source": "한국부동산원",
+   "scope": "전국",
+   "name": "전국·시도 대시보드 데이터",
+   "file": "data/reb_korea.json",
+   "format": "JSON",
+   "bytes": 298513,
+   "detail": "대시보드용 compact JSON (요약 + 시계열)"
+  },
+  {
+   "source": "한국부동산원",
+   "scope": "시군구",
+   "name": "서울 시군구",
+   "file": "data/sg/reb/seoul.json",
+   "format": "JSON",
+   "bytes": 317913,
+   "detail": "서울 25개 시군구 · 매매/전세 지수"
+  },
+  {
+   "source": "한국부동산원",
+   "scope": "시군구",
+   "name": "경기 시군구",
+   "file": "data/sg/reb/gyeonggi.json",
+   "format": "JSON",
+   "bytes": 618331,
+   "detail": "경기 52개 시군구 · 매매/전세 지수"
+  },
+  {
+   "source": "한국부동산원",
+   "scope": "시군구",
+   "name": "인천 시군구",
+   "file": "data/sg/reb/incheon.json",
+   "format": "JSON",
+   "bytes": 115197,
+   "detail": "인천 8개 시군구 · 매매/전세 지수"
+  },
+  {
+   "source": "한국부동산원",
+   "scope": "시군구",
+   "name": "부산 시군구",
+   "file": "data/sg/reb/busan.json",
+   "format": "JSON",
+   "bytes": 218926,
+   "detail": "부산 16개 시군구 · 매매/전세 지수"
+  },
+  {
+   "source": "한국부동산원",
+   "scope": "시군구",
+   "name": "대구 시군구",
+   "file": "data/sg/reb/daegu.json",
+   "format": "JSON",
+   "bytes": 121925,
+   "detail": "대구 8개 시군구 · 매매/전세 지수"
+  },
+  {
+   "source": "한국부동산원",
+   "scope": "시군구",
+   "name": "광주 시군구",
+   "file": "data/sg/reb/gwangju.json",
+   "format": "JSON",
+   "bytes": 81055,
+   "detail": "광주 5개 시군구 · 매매/전세 지수"
+  },
+  {
+   "source": "한국부동산원",
+   "scope": "시군구",
+   "name": "대전 시군구",
+   "file": "data/sg/reb/daejeon.json",
+   "format": "JSON",
+   "bytes": 79894,
+   "detail": "대전 5개 시군구 · 매매/전세 지수"
+  },
+  {
+   "source": "한국부동산원",
+   "scope": "시군구",
+   "name": "울산 시군구",
+   "file": "data/sg/reb/ulsan.json",
+   "format": "JSON",
+   "bytes": 80628,
+   "detail": "울산 5개 시군구 · 매매/전세 지수"
+  },
+  {
+   "source": "한국부동산원",
+   "scope": "시군구",
+   "name": "강원 시군구",
+   "file": "data/sg/reb/gangwon.json",
+   "format": "JSON",
+   "bytes": 104843,
+   "detail": "강원 7개 시군구 · 매매/전세 지수"
+  },
+  {
+   "source": "한국부동산원",
+   "scope": "시군구",
+   "name": "충북 시군구",
+   "file": "data/sg/reb/chungbuk.json",
+   "format": "JSON",
+   "bytes": 116360,
+   "detail": "충북 8개 시군구 · 매매/전세 지수"
+  },
+  {
+   "source": "한국부동산원",
+   "scope": "시군구",
+   "name": "충남 시군구",
+   "file": "data/sg/reb/chungnam.json",
+   "format": "JSON",
+   "bytes": 167641,
+   "detail": "충남 12개 시군구 · 매매/전세 지수"
+  },
+  {
+   "source": "한국부동산원",
+   "scope": "시군구",
+   "name": "전북 시군구",
+   "file": "data/sg/reb/jeonbuk.json",
+   "format": "JSON",
+   "bytes": 115125,
+   "detail": "전북 8개 시군구 · 매매/전세 지수"
+  },
+  {
+   "source": "한국부동산원",
+   "scope": "시군구",
+   "name": "전남 시군구",
+   "file": "data/sg/reb/jeonnam.json",
+   "format": "JSON",
+   "bytes": 94827,
+   "detail": "전남 6개 시군구 · 매매/전세 지수"
+  },
+  {
+   "source": "한국부동산원",
+   "scope": "시군구",
+   "name": "경북 시군구",
+   "file": "data/sg/reb/gyeongbuk.json",
+   "format": "JSON",
+   "bytes": 180267,
+   "detail": "경북 13개 시군구 · 매매/전세 지수"
+  },
+  {
+   "source": "한국부동산원",
+   "scope": "시군구",
+   "name": "경남 시군구",
+   "file": "data/sg/reb/gyeongnam.json",
+   "format": "JSON",
+   "bytes": 183409,
+   "detail": "경남 13개 시군구 · 매매/전세 지수"
+  },
+  {
+   "source": "한국부동산원",
+   "scope": "시군구",
+   "name": "제주 시군구",
+   "file": "data/sg/reb/jeju.json",
+   "format": "JSON",
+   "bytes": 44065,
+   "detail": "제주 2개 시군구 · 매매/전세 지수"
+  }
+ ]
+}
