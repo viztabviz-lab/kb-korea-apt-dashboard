@@ -8,7 +8,7 @@
    "name": "전국·시도 시계열",
    "file": "data/kb_korea_시계열.csv",
    "format": "CSV",
-   "bytes": 683099,
+   "bytes": 735492,
    "detail": "전국+17개 시도 · 14,687행 · 매매/전세 지수·평균가·전세가율 (long-format)"
   },
   {
@@ -17,7 +17,7 @@
    "name": "서울 시군구",
    "file": "data/sg/kb/seoul.csv",
    "format": "CSV",
-   "bytes": 496728,
+   "bytes": 540453,
    "detail": "서울 25개 시군구 · 9,025행 · 매매/전세 지수·전세가율 (long-format)"
   },
   {
@@ -26,7 +26,7 @@
    "name": "경기 시군구",
    "file": "data/sg/kb/gyeonggi.csv",
    "format": "CSV",
-   "bytes": 1046589,
+   "bytes": 1125426,
    "detail": "경기 55개 시군구 · 17,629행 · 매매/전세 지수·전세가율 (long-format)"
   },
   {
@@ -35,7 +35,7 @@
    "name": "인천 시군구",
    "file": "data/sg/kb/incheon.csv",
    "format": "CSV",
-   "bytes": 170138,
+   "bytes": 184614,
    "detail": "인천 9개 시군구 · 3,134행 · 매매/전세 지수·전세가율 (long-format)"
   },
   {
@@ -44,7 +44,7 @@
    "name": "부산 시군구",
    "file": "data/sg/kb/busan.csv",
    "format": "CSV",
-   "bytes": 312451,
+   "bytes": 340072,
    "detail": "부산 16개 시군구 · 5,743행 · 매매/전세 지수·전세가율 (long-format)"
   },
   {
@@ -53,7 +53,7 @@
    "name": "대구 시군구",
    "file": "data/sg/kb/daegu.csv",
    "format": "CSV",
-   "bytes": 155643,
+   "bytes": 169679,
    "detail": "대구 9개 시군구 · 2,924행 · 매매/전세 지수·전세가율 (long-format)"
   },
   {
@@ -62,7 +62,7 @@
    "name": "광주 시군구",
    "file": "data/sg/kb/gwangju.csv",
    "format": "CSV",
-   "bytes": 94893,
+   "bytes": 103638,
    "detail": "광주 5개 시군구 · 1,805행 · 매매/전세 지수·전세가율 (long-format)"
   },
   {
@@ -71,7 +71,7 @@
    "name": "대전 시군구",
    "file": "data/sg/kb/daejeon.csv",
    "format": "CSV",
-   "bytes": 96249,
+   "bytes": 104994,
    "detail": "대전 5개 시군구 · 1,805행 · 매매/전세 지수·전세가율 (long-format)"
   },
   {
@@ -80,7 +80,7 @@
    "name": "울산 시군구",
    "file": "data/sg/kb/ulsan.csv",
    "format": "CSV",
-   "bytes": 94663,
+   "bytes": 103408,
    "detail": "울산 5개 시군구 · 1,805행 · 매매/전세 지수·전세가율 (long-format)"
   },
   {
@@ -89,7 +89,7 @@
    "name": "세종 시군구",
    "file": "data/sg/kb/sejong.csv",
    "format": "CSV",
-   "bytes": 19841,
+   "bytes": 21590,
    "detail": "세종 1개 시군구 · 361행 · 매매/전세 지수·전세가율 (long-format)"
   },
   {
@@ -98,7 +98,7 @@
    "name": "강원 시군구",
    "file": "data/sg/kb/gangwon.csv",
    "format": "CSV",
-   "bytes": 249708,
+   "bytes": 258750,
    "detail": "강원 18개 시군구 · 4,458행 · 매매/전세 지수·전세가율 (long-format)"
   },
   {
@@ -107,7 +107,7 @@
    "name": "충북 시군구",
    "file": "data/sg/kb/chungbuk.csv",
    "format": "CSV",
-   "bytes": 221066,
+   "bytes": 229096,
    "detail": "충북 15개 시군구 · 3,760행 · 매매/전세 지수·전세가율 (long-format)"
   },
   {
@@ -116,7 +116,7 @@
    "name": "충남 시군구",
    "file": "data/sg/kb/chungnam.csv",
    "format": "CSV",
-   "bytes": 244779,
+   "bytes": 253997,
    "detail": "충남 17개 시군구 · 4,272행 · 매매/전세 지수·전세가율 (long-format)"
   },
   {
@@ -125,7 +125,7 @@
    "name": "전북 시군구",
    "file": "data/sg/kb/jeonbuk.csv",
    "format": "CSV",
-   "bytes": 199929,
+   "bytes": 207090,
    "detail": "전북 14개 시군구 · 3,479행 · 매매/전세 지수·전세가율 (long-format)"
   },
   {
@@ -134,7 +134,7 @@
    "name": "전남 시군구",
    "file": "data/sg/kb/jeonnam.csv",
    "format": "CSV",
-   "bytes": 289308,
+   "bytes": 299747,
    "detail": "전남 21개 시군구 · 5,191행 · 매매/전세 지수·전세가율 (long-format)"
   },
   {
@@ -143,7 +143,7 @@
    "name": "경북 시군구",
    "file": "data/sg/kb/gyeongbuk.csv",
    "format": "CSV",
-   "bytes": 283140,
+   "bytes": 293590,
    "detail": "경북 20개 시군구 · 4,990행 · 매매/전세 지수·전세가율 (long-format)"
   },
   {
@@ -152,7 +152,7 @@
    "name": "경남 시군구",
    "file": "data/sg/kb/gyeongnam.csv",
    "format": "CSV",
-   "bytes": 338863,
+   "bytes": 351205,
    "detail": "경남 23개 시군구 · 5,768행 · 매매/전세 지수·전세가율 (long-format)"
   },
   {
@@ -161,7 +161,7 @@
    "name": "제주 시군구",
    "file": "data/sg/kb/jeju.csv",
    "format": "CSV",
-   "bytes": 28544,
+   "bytes": 29512,
    "detail": "제주 2개 시군구 · 492행 · 매매/전세 지수·전세가율 (long-format)"
   }
  ]

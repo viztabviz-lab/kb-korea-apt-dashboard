@@ -100,7 +100,7 @@ def gather():
     all_recs += collect("avgPrc", "평균가격", "전세", SIDO_SET,
                         매물종별구분="01", 매매전세코드="02")
     print("· 전세가율(월간, %) ...")
-    all_recs += collect("dealCntstTnantRato", "전세가율", "-", SIDO_SET,
+    all_recs += collect("dealCntstTnantRato", "전세가율", "전세가율", SIDO_SET,
                         매물종별구분="01")
     return all_recs
 
@@ -157,7 +157,7 @@ def write_excel(recs):
             round(jeon_avg / 10000, 2) if jeon_avg else "",
             g("가격지수", "매매") or "",
             g("가격지수", "전세") or "",
-            g("전세가율", "-") or "",
+            g("전세가율", "전세가율") or "",
         ])
     style_header(ws, len(cols))
     ws.column_dimensions["A"].width = 12
@@ -181,7 +181,7 @@ def write_excel(recs):
 
     wide_sheet("매매 가격지수", "가격지수", "매매")
     wide_sheet("전세 가격지수", "가격지수", "전세")
-    wide_sheet("전세가율", "전세가율", "-")
+    wide_sheet("전세가율", "전세가율", "전세가율")
     wide_sheet("매매 평균가격(만원)", "평균가격", "매매")
     wide_sheet("전세 평균가격(만원)", "평균가격", "전세")
 
@@ -217,7 +217,7 @@ def write_json(recs):
             "전세평균억": round(je / 10000, 2) if je else None,
             "매매지수": g("가격지수", "매매"),
             "전세지수": g("가격지수", "전세"),
-            "전세가율": g("전세가율", "-"),
+            "전세가율": g("전세가율", "전세가율"),
         })
     weekly_dates = sorted({r["날짜"] for r in recs if r["지표"] == "가격지수"})
     monthly_dates = sorted({r["날짜"] for r in recs if r["지표"] == "평균가격"})
@@ -232,7 +232,7 @@ def write_json(recs):
         "series": {
             "매매지수": build_series(recs, "가격지수", "매매"),
             "전세지수": build_series(recs, "가격지수", "전세"),
-            "전세가율": build_series(recs, "전세가율", "-"),
+            "전세가율": build_series(recs, "전세가율", "전세가율"),
             "매매평균": build_series(recs, "평균가격", "매매"),
             "전세평균": build_series(recs, "평균가격", "전세"),
         },
@@ -262,7 +262,7 @@ def collect_sigungu(code):
                     월간주간구분코드="02", 매물종별구분="01", 매매전세코드="01", 지역코드=code)
     recs += collect("priceIndex", "가격지수", "전세", None,
                     월간주간구분코드="02", 매물종별구분="01", 매매전세코드="02", 지역코드=code)
-    recs += collect("dealCntstTnantRato", "전세가율", "-", None,
+    recs += collect("dealCntstTnantRato", "전세가율", "전세가율", None,
                     매물종별구분="01", 지역코드=code)
     return recs
 
@@ -303,7 +303,7 @@ def write_sigungu():
             "series": {
                 "매매지수": build_series_named(recs, "가격지수", "매매"),
                 "전세지수": build_series_named(recs, "가격지수", "전세"),
-                "전세가율": build_series_named(recs, "전세가율", "-"),
+                "전세가율": build_series_named(recs, "전세가율", "전세가율"),
             },
         }
         with open(base / f"{SLUG[name]}.json", "w", encoding="utf-8") as f:
